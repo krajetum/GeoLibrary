@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="frontend/frontend.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="GeoLibrary.AppHost/GeoLibrary.AppHost.csproj" />
+  <Project Path="GeoLibrary.Server/GeoLibrary.Server.csproj" />
+</Solution>
