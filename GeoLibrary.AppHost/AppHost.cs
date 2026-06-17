@@ -11,6 +11,7 @@ var database = postgres.AddDatabase("database");
 
 var server = builder.AddProject<Projects.GeoLibrary_Server>("server")
     .WithReference(postgres)
+    .WithReference(database)
     .WithReference(cache)
     .WaitFor(cache)
     .WaitFor(database)
