@@ -1,5 +1,10 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
+var keycloak = builder.AddKeycloak("keycloak", 8080)
+                      .WithDataVolume()
+                      .WithRealmImport("./realms");
+
+
 var cache = builder.AddRedis("cache");
 
 var postgres = builder.AddPostgres("postgres")
@@ -12,9 +17,11 @@ var database = postgres.AddDatabase("database");
 var server = builder.AddProject<Projects.GeoLibrary_Server>("server")
     .WithReference(postgres)
     .WithReference(database)
+    .WithReference(keycloak)
     .WithReference(cache)
-    .WaitFor(cache)
     .WaitFor(database)
+    .WaitFor(keycloak)
+    .WaitFor(cache)
     .WithHttpHealthCheck("/health")
     .WithExternalHttpEndpoints();
 

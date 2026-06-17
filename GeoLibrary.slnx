@@ -1,5 +1,5 @@
 <Solution>
-  <Project Path="frontend/frontend.esproj">
+  <Project Path="frontend/GeoLibrary.Frontend.esproj">
     <Build />
     <Deploy />
   </Project>
