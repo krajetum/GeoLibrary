@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GeoLibrary.Server.Database\GeoLibrary.Server.Database.csproj" />
+    <ProjectReference Include="..\GeoLibrary.Server.Services\GeoLibrary.Server.Services.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,3 +1,5 @@
+using GeoLibrary.Server.Api.Extensions;
+
 var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
 
 var isDevelopment = env == "Development";
@@ -13,17 +15,9 @@ builder.AddRedisClientBuilder("cache")
 // Add services to the container.
 builder.Services.AddProblemDetails();
 
-builder.Services.AddAuthentication()
-    .AddJwtBearer(o =>
-    {
-        o.Authority = "http://keycloak:8080/realms/geolibrary";
-        o.Audience = "geolibrary.api";
-        o.RequireHttpsMetadata = isDevelopment; // solo dev
-    });
-builder.Services.AddAuthorization();
+builder.Services.AddAuth(isDevelopment);
 
-
-
+builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
@@ -45,5 +39,6 @@ app.UseFileServer();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapControllers();
 
 app.Run();

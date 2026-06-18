@@ -1,8 +1,16 @@
 <Solution>
-  <Project Path="frontend/GeoLibrary.Frontend.esproj">
-    <Build />
-    <Deploy />
-  </Project>
+  <Folder Name="/Backend/">
+    <Project Path="Backend/GeoLibrary.Server.Abstractions/GeoLibrary.Server.Abstractions.csproj" />
+    <Project Path="Backend/GeoLibrary.Server.Api/GeoLibrary.Server.Api.csproj" />
+    <Project Path="Backend/GeoLibrary.Server.Database/GeoLibrary.Server.Database.csproj" Id="fc8891ee-e359-4499-b5a5-1136c87952b5" />
+    <Project Path="Backend/GeoLibrary.Server.Dependencies/GeoLibrary.Server.Dependencies.csproj" />
+    <Project Path="Backend/GeoLibrary.Server.Services/GeoLibrary.Server.Services.csproj" Id="075cc135-e833-4fa5-96f6-a52fd08d5aa4" />
+  </Folder>
+  <Folder Name="/Frontend/">
+    <Project Path="Frontend/GeoLibrary.Frontend/GeoLibrary.Frontend.esproj">
+      <Build />
+      <Deploy />
+    </Project>
+  </Folder>
   <Project Path="GeoLibrary.AppHost/GeoLibrary.AppHost.csproj" />
-  <Project Path="GeoLibrary.Server/GeoLibrary.Server.csproj" />
 </Solution>

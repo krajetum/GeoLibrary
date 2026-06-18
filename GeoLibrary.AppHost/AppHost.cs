@@ -2,7 +2,7 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 var keycloak = builder.AddKeycloak("keycloak", 8080)
                       .WithDataVolume()
-                      .WithRealmImport("./realms");
+                      .WithRealmImport("../Keycloak/realms");
 
 
 var cache = builder.AddRedis("cache");
@@ -14,7 +14,7 @@ var postgres = builder.AddPostgres("postgres")
 
 var database = postgres.AddDatabase("database");
 
-var server = builder.AddProject<Projects.GeoLibrary_Server>("server")
+var server = builder.AddProject<Projects.GeoLibrary_Server_Api>("server")
     .WithReference(postgres)
     .WithReference(database)
     .WithReference(keycloak)
@@ -25,7 +25,7 @@ var server = builder.AddProject<Projects.GeoLibrary_Server>("server")
     .WithHttpHealthCheck("/health")
     .WithExternalHttpEndpoints();
 
-var webfrontend = builder.AddViteApp("webfrontend", "../frontend")
+var webfrontend = builder.AddViteApp("webfrontend", "../Frontend/GeoLibrary.Frontend")
                          .WithReference(server)
                          .WaitFor(server);
 

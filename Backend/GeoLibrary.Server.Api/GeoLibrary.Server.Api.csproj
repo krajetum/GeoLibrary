@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.Keycloak" Version="13.4.5-preview.1.26316.12" />
+    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.4.5" />
     <PackageReference Include="Aspire.StackExchange.Redis.OutputCaching" Version="13.2.4" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.5" />
@@ -18,5 +19,9 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.2" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.15.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GeoLibrary.Server.Dependencies\GeoLibrary.Server.Dependencies.csproj" />
   </ItemGroup>
 </Project>
