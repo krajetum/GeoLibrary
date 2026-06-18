@@ -1,0 +1,1 @@
+Per accedere a keycloack (https://localhost:8080) è necessario recuperare dalle variabili di ambiente del POD il valore "KC_BOOTSTRAP_ADMIN_PASSWORD" e "KC_BOOTSTRAP_ADMIN_USERNAME" per poter loggare come amministratore.
