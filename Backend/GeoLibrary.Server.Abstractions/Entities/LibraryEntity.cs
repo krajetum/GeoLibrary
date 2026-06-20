@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using NetTopologySuite.Geometries;
 
 namespace GeoLibrary.Server.Abstractions.Entities;
 
@@ -13,8 +11,8 @@ public class LibraryEntity
     public required string Country { get; set; }
     public required string CountryCode { get; set; }
     public required string PostalCode { get; set; } = string.Empty;
-    public required double Latitude { get; set; } = 0.0;
-    public required double Longitude { get; set; } = 0.0;
+    // Colonna geometrica PostGIS - (X=Longitude, Y=Latitude), SRID 4326 (WGS84)
+    public required Point Location { get; set; }
 
     public ICollection<BooksEntity> Books { get; set; } = [];
 }

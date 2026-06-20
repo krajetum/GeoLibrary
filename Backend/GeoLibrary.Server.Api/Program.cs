@@ -1,42 +1,45 @@
-using GeoLibrary.Server.Abstractions;
 using GeoLibrary.Server.Api.Extensions;
-using GeoLibrary.Server.Services;
+using GeoLibrary.Server.Database;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add service defaults & Aspire client integrations.
 builder.Services.AddHttpClient();
 builder.AddServiceDefaults();
 
 builder.AddRedisClientBuilder("cache")
     .WithOutputCache();
 
-// Add services to the container.
 builder.Services.AddProblemDetails();
-
 builder.Services.AddAuth(builder.Environment.IsDevelopment());
-
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 builder.AddHttpClients();
 
-builder.Services.AddDbContext<GeoLibrary.Server.Database.GeoLibraryDbContext>(options =>
-{
-    options.UseNpgsql(builder.Configuration.GetConnectionString("database"));
-});
+// Aspire inietta la connection string con chiave "database" (da AppHost: postgres.AddDatabase("database")).
+// GetConnectionString("database") la legge dalla configurazione standard .NET.
+builder.Services.AddDbContext<GeoLibraryDbContext>(options =>
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("database"),
+        o => o.UseNetTopologySuite()
+    ));
 
-builder.Services.AddAutoMapper(config => {}, typeof(Program).Assembly);
-
+builder.Services.AddAutoMapper(config => { }, typeof(Program).Assembly);
 
 var app = builder.Build();
 
-app.MapScalarApiReference(); // UI disponibile su /scalar/v1
+// Applica le migration automaticamente all'avvio.
+// Sicuro: Aspire garantisce che il database sia pronto via WaitFor(database) in AppHost.
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<GeoLibraryDbContext>();
+    await db.Database.MigrateAsync();
+}
 
-// Configure the HTTP request pipeline.
+app.MapScalarApiReference();
+
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
@@ -45,11 +48,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseOutputCache();
-
 app.MapDefaultEndpoints();
-
 app.UseFileServer();
-
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
