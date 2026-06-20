@@ -9,8 +9,8 @@ namespace GeoLibrary.Server.Database;
 public class GeoLibraryDbContext(DbContextOptions<GeoLibraryDbContext> options) : DbContext(options)
 {
 
-    DbSet<Library> Libraries { get; set;}
-    DbSet<Books> Books { get; set; }
+    public DbSet<LibraryEntity> Libraries { get; set;}
+    public DbSet<BooksEntity> Books { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

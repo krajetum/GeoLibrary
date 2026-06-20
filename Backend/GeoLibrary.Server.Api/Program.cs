@@ -29,6 +29,7 @@ builder.Services.AddDbContext<GeoLibrary.Server.Database.GeoLibraryDbContext>(op
     options.UseNpgsql(builder.Configuration.GetConnectionString("database"));
 });
 
+builder.Services.AddAutoMapper(config => {}, typeof(Program).Assembly);
 
 
 var app = builder.Build();

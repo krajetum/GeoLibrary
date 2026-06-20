@@ -4,7 +4,7 @@ using System.Text;
 
 namespace GeoLibrary.Server.Abstractions.Entities;
 
-public class Library
+public class LibraryEntity
 {
     public required Guid Id { get; set; }
     public required string Name { get; set; }
@@ -16,5 +16,5 @@ public class Library
     public required double Latitude { get; set; } = 0.0;
     public required double Longitude { get; set; } = 0.0;
 
-    public ICollection<Books> Books { get; set; } = [];
+    public ICollection<BooksEntity> Books { get; set; } = [];
 }

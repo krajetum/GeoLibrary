@@ -1,12 +1,14 @@
-﻿namespace GeoLibrary.Server.Abstractions.Entities;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
 
-public class Books
+namespace GeoLibrary.Server.Abstractions.Dtos.Book;
+
+public class BookDto 
 {
     public required Guid Id { get; set; }
     public required string Title { get; set; }
     public required string Description { get; set; }
     public required string Author { get; set; }
-
     public required Guid LibraryId { get; set; }
-    public required Library Library { get; set; }
 }
