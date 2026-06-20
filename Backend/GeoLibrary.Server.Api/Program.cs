@@ -1,12 +1,12 @@
+using GeoLibrary.Server.Abstractions;
 using GeoLibrary.Server.Api.Extensions;
-
-var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-
-var isDevelopment = env == "Development";
+using GeoLibrary.Server.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add service defaults & Aspire client integrations.
+builder.Services.AddHttpClient();
 builder.AddServiceDefaults();
 
 builder.AddRedisClientBuilder("cache")
@@ -15,11 +15,20 @@ builder.AddRedisClientBuilder("cache")
 // Add services to the container.
 builder.Services.AddProblemDetails();
 
-builder.Services.AddAuth(isDevelopment);
+builder.Services.AddAuth(builder.Environment.IsDevelopment());
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+builder.AddHttpClients();
+
+builder.Services.AddDbContext<GeoLibrary.Server.Database.GeoLibraryDbContext>(options =>
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("database"));
+});
+
+
 
 var app = builder.Build();
 

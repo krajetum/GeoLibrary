@@ -1,4 +1,7 @@
-﻿namespace GeoLibrary.Server.Api.Extensions;
+﻿using GeoLibrary.Server.Abstractions;
+using GeoLibrary.Server.Services;
+
+namespace GeoLibrary.Server.Api.Extensions;
 
 public static class ProgramExtensions
 {
@@ -17,4 +20,16 @@ public static class ProgramExtensions
         return services;
     }
 
+    public static WebApplicationBuilder AddHttpClients(this WebApplicationBuilder builder)
+    {
+        builder.Services.AddHttpClient<IMapsService, OpenStreetMapService>(client =>
+        {
+            client.BaseAddress = new Uri(builder.Configuration["OpenStreetMap:BaseUrl"] ?? "https://nominatim.openstreetmap.org/");
+        });
+
+
+
+
+        return builder;
+    }
 }
