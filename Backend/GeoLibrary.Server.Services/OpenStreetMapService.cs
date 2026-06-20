@@ -20,17 +20,16 @@ public class OpenStreetMapService(HttpClient httpClient, ILogger<OpenStreetMapSe
     {
         try
         {
-            var addresses = await httpClient.GetFromJsonAsync<OpenStreetMapAddressSearch[]>($"search?q={address}&format=jsonv2&limit=5&addressdetails=1",
-                new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            var addresses = await httpClient.GetFromJsonAsync<OpenStreetMapAddressSearch[]>($"search?q={address}&limit=5&addressdetails=1&format=jsonv2");
 
             return addresses?.ToList() ?? [];
         }
         catch (Exception ex)
         {
             logger.LogError("Error occurred while fetching address information: {Error}", ex);
+            throw;
         }
 
-        return [];
     }
 
 

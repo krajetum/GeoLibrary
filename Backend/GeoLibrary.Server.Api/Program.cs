@@ -2,6 +2,7 @@ using GeoLibrary.Server.Abstractions;
 using GeoLibrary.Server.Api.Extensions;
 using GeoLibrary.Server.Services;
 using Microsoft.EntityFrameworkCore;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +32,8 @@ builder.Services.AddDbContext<GeoLibrary.Server.Database.GeoLibraryDbContext>(op
 
 
 var app = builder.Build();
+
+app.MapScalarApiReference(); // UI disponibile su /scalar/v1
 
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();

@@ -25,6 +25,8 @@ public static class ProgramExtensions
         builder.Services.AddHttpClient<IMapsService, OpenStreetMapService>(client =>
         {
             client.BaseAddress = new Uri(builder.Configuration["OpenStreetMap:BaseUrl"] ?? "https://nominatim.openstreetmap.org/");
+
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("GeoLibraryServerApi/1.0 (https://github.com/GeoLibrary/GeoLibrary)");
         });
 
 

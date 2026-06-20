@@ -21,6 +21,7 @@ public class MapsController : ControllerBase
         _logger = logger;
     }
 
+    [HttpGet]
     public async Task<IActionResult> GetAddressInfo([FromQuery] string address)
     {
         if (string.IsNullOrWhiteSpace(address))
