@@ -11,8 +11,8 @@ public static class ProgramExtensions
         services.AddAuthentication()
                 .AddJwtBearer(o =>
                 {
-                    o.Authority = "http://keycloak:8080/realms/geolibrary";
-                    o.Audience = "geolibrary.api";
+                    o.Authority = "http://keycloak:8080/realms/GeoLibrary";
+                    o.Audience = "geolibrary-api";
                     o.RequireHttpsMetadata = !isDevelopment; // solo dev
                 });
 
