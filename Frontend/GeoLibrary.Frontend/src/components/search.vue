@@ -1,85 +1,60 @@
 <template>
-  <div class="w-full bg-white shadow-md rounded-lg p-4">
-    <div class="flex">
-      <button
-        :class="[
-          'px-4 py-2 cursor-pointer',
-          activeTab === 'address'
-            ? 'bg-blue-500 text-white hover:bg-blue-600'
-            : 'bg-gray-200 text-gray-700 hover:bg-gray-300',
-        ]"
-        @click="activeTab = 'address'"
-      >
-        Address
-      </button>
-      <button
-        :class="[
-          'px-4 py-2 cursor-pointer',
-          activeTab === 'map'
-            ? 'bg-blue-500 text-white hover:bg-blue-600'
-            : 'bg-gray-200 text-gray-700 hover:bg-gray-300',
-        ]"
-        @click="activeTab = 'map'"
-      >
-        Map
-      </button>
-      <button
-        :class="[
-          'px-4 py-2 cursor-pointer',
-          activeTab === 'bookName'
-            ? 'bg-blue-500 text-white hover:bg-blue-600'
-            : 'bg-gray-200 text-gray-700 hover:bg-gray-300',
-        ]"
-        @click="activeTab = 'bookName'"
-      >
-        Book Name
-      </button>
-    </div>
-    <div class="p-4 border-1">
-      <div v-if="activeTab === 'address'" class="mt-4">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Enter address..."
-          class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-      <div v-if="activeTab === 'map'" class="mt-4">
-        <div style="height: 600px">
-          <div v-if="isLoadingMap" class="flex items-center justify-center h-full">
-            <p>Loading map...</p>
+  <v-card>
+    <v-tabs v-model="activeTab" color="primary">
+      <v-tab value="address">Address</v-tab>
+      <v-tab value="map">Map</v-tab>
+      <v-tab value="bookName">Book Name</v-tab>
+    </v-tabs>
+
+    <v-card-text>
+      <v-tabs-window v-model="activeTab">
+        <v-tabs-window-item value="address">
+          <v-text-field
+            v-model="searchQuery"
+            label="Enter address..."
+            variant="outlined"
+            hide-details
+          />
+        </v-tabs-window-item>
+
+        <v-tabs-window-item value="map">
+          <div style="height: 600px">
+            <div v-if="isLoadingMap" class="d-flex align-center justify-center h-100">
+              <p>Loading map...</p>
+            </div>
+            <div v-else-if="!isSupported" class="d-flex align-center justify-center h-100">
+              <p>Geolocation is not supported by this browser.</p>
+            </div>
+            <div v-else-if="error" class="d-flex align-center justify-center h-100">
+              <p>Error getting geolocation: {{ error.message }}</p>
+            </div>
+            <l-map v-else ref="map" v-model:zoom="zoom" :center="center">
+              <l-tile-layer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                layer-type="base"
+                name="OpenStreetMap"
+              ></l-tile-layer>
+              <l-circle-marker
+                v-if="center[0] !== 0 && center[1] !== 0"
+                :lat-lng="center"
+                :radius="10"
+                color="blue"
+              ></l-circle-marker>
+            </l-map>
           </div>
-          <div v-else-if="!isSupported" class="flex items-center justify-center h-full">
-            <p>Geolocation is not supported by this browser.</p>
-          </div>
-          <div v-else-if="error" class="flex items-center justify-center h-full">
-            <p>Error getting geolocation: {{ error.message }}</p>
-          </div>
-          <l-map v-else ref="map" v-model:zoom="zoom" :center="center">
-            <l-tile-layer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              layer-type="base"
-              name="OpenStreetMap"
-            ></l-tile-layer>
-            <l-circle-marker
-              v-if="center[0] !== 0 && center[1] !== 0"
-              :lat-lng="center"
-              :radius="10"
-              color="blue"
-            ></l-circle-marker>
-          </l-map>
-        </div>
-      </div>
-      <div v-if="activeTab === 'bookName'" class="mt-4">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Enter book name..."
-          class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-    </div>
-  </div>
+        </v-tabs-window-item>
+
+        <v-tabs-window-item value="bookName">
+          <v-text-field
+            v-model="searchQuery"
+            label="Enter book name..."
+            variant="outlined"
+            hide-details
+          />
+        </v-tabs-window-item>
+      </v-tabs-window>
+    </v-card-text>
+  </v-card>
 </template>
 
 <script setup lang="ts">

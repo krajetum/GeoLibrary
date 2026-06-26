@@ -1,9 +1,7 @@
 <script setup lang="ts"></script>
 
 <template>
-  <router-view />
+  <v-app>
+    <router-view />
+  </v-app>
 </template>
-
-<style>
-@import 'tailwindcss';
-</style>

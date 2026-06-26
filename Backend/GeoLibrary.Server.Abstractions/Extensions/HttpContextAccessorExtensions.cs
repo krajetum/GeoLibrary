@@ -8,10 +8,10 @@ namespace GeoLibrary.Server.Abstractions.Extensions;
 public static class HttpContextAccessorExtensions
 {
 
-    public static bool TryGetUserId(this IHttpContextAccessor httpContextAccessor, out string? userId)
+    public static bool TryGetUserId(this IHttpContextAccessor httpContextAccessor, out string userId)
     {
         var userIdClaim = httpContextAccessor.HttpContext?.User?.FindFirst("sub");
-        userId = userIdClaim?.Value;
+        userId = userIdClaim?.Value ?? string.Empty;
         return !string.IsNullOrEmpty(userId);
     }
 

@@ -12,6 +12,17 @@ export const useAuthStore = defineStore('auth', () => {
     })
     isAuthenticated.value = authenticated
     token.value = keycloak.token ?? null
+
+    // Refresh token ogni 4 minuti (prima dei 5 min di scadenza tipici)
+    if (authenticated) {
+      setInterval(
+        async () => {
+          await keycloak.updateToken(60)
+          token.value = keycloak.token ?? null
+        },
+        4 * 60 * 1000,
+      )
+    }
   }
 
   function login() {
