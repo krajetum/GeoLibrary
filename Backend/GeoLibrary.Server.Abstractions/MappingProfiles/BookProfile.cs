@@ -11,7 +11,7 @@ public class BookProfile : Profile
 {
     public BookProfile()
     {
-        CreateMap<BooksEntity, BookDto>();
+        CreateMap<BookEntity, BookDto>();
     }
 
 

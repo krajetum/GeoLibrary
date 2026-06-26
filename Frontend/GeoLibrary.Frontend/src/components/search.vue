@@ -1,8 +1,3 @@
-<!-- 
-This component is inspired by Immobiliare.it search bar 
-It will have three tabs for searching by map, by address and by book name. Each tab will have its own form and will be able to submit the search query to the backend.     
--->
-
 <template>
   <div class="w-full bg-white shadow-md rounded-lg p-4">
     <div class="flex">
@@ -54,6 +49,12 @@ It will have three tabs for searching by map, by address and by book name. Each 
           <div v-if="isLoadingMap" class="flex items-center justify-center h-full">
             <p>Loading map...</p>
           </div>
+          <div v-else-if="!isSupported" class="flex items-center justify-center h-full">
+            <p>Geolocation is not supported by this browser.</p>
+          </div>
+          <div v-else-if="error" class="flex items-center justify-center h-full">
+            <p>Error getting geolocation: {{ error.message }}</p>
+          </div>
           <l-map v-else ref="map" v-model:zoom="zoom" :center="center">
             <l-tile-layer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -86,7 +87,6 @@ import 'leaflet/dist/leaflet.css'
 import { ref, watch } from 'vue'
 import { LMap, LTileLayer, LCircleMarker } from '@vue-leaflet/vue-leaflet'
 import { useGeolocation } from '@vueuse/core'
-import { l } from 'vue-router/dist/index-BQLwgiyK.js'
 
 const { coords, isSupported, error } = useGeolocation()
 
