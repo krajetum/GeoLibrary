@@ -1,7 +1,7 @@
 <script setup lang="ts"></script>
 
 <template>
-  <v-app>
+  <v-responsive>
     <router-view />
-  </v-app>
+  </v-responsive>
 </template>

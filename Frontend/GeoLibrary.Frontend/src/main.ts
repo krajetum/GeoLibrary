@@ -11,7 +11,13 @@ app.use(pinia)
 app.use(vuetify)
 
 const authStore = useAuthStore()
-await authStore.init()
+try {
+  await authStore.init()
+} catch (e) {
+  // Un init Keycloak fallito non deve impedire il mount: l'app si carica comunque
+  // (Home pubblica) e il router-guard gestirà l'eventuale ri-login.
+  console.error('Inizializzazione Keycloak fallita:', e)
+}
 
 app.use(router)
 app.mount('#app')

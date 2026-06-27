@@ -27,7 +27,13 @@ var server = builder.AddProject<Projects.GeoLibrary_Server_Api>("server")
 
 var webfrontend = builder.AddViteApp("webfrontend", "../Frontend/GeoLibrary.Frontend")
                          .WithReference(server)
-                         .WaitFor(server);
+                         .WaitFor(server)
+                         .WithEndpoint("http", endpoint =>
+                         {
+                             endpoint.Port = 5173;
+                             endpoint.TargetPort = 5173;
+                             endpoint.IsProxied = false;
+                         });
 
 server.PublishWithContainerFiles(webfrontend, "wwwroot");
 

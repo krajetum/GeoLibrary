@@ -8,6 +8,11 @@ import vuetify from 'vite-plugin-vuetify'
 
 // https://vite.dev/config/
 export default defineConfig({
+  server: {
+    port: 5173,
+    // Se la porta è occupata fallisce invece di sceglierne un'altra a caso
+    strictPort: true,
+  },
   plugins: [
     vue(),
     vueDevTools(),
