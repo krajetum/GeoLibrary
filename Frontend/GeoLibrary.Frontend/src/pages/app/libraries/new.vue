@@ -1,12 +1,7 @@
 <template>
-  <v-container class="py-8" style="max-width: 760px">
-    <!-- Titolo di pagina: un solo h1 per pagina, utile a screen reader e SEO -->
+  <v-container class="py-8">
     <h1 class="text-h4 mb-6">Crea una nuova libreria</h1>
 
-    <!-- 
-      Riepilogo errori in cima: quando la validazione fallisce, sposto il focus qui.
-      role="alert" + aria-live fanno annunciare il messaggio dagli screen reader.
-    -->
     <v-alert
       v-if="errorSummary"
       ref="errorAlert"
@@ -20,10 +15,6 @@
     </v-alert>
 
     <v-form ref="formRef" @submit.prevent="onSubmit" validate-on="submit">
-      <!-- 
-        Ogni gruppo logico è un <fieldset>/<legend> nativo: dà struttura semantica.
-        Vuetify non lo fa da solo, quindi lo aggiungo a mano.
-      -->
       <v-card variant="flat">
         <v-card-title>Informazioni principali</v-card-title>
 

@@ -11,7 +11,11 @@ public class LibraryProfile : Profile
 {
     public LibraryProfile()
     {
-        CreateMap<LibraryEntity, LibraryDto>();
+        CreateMap<LibraryEntity, LibraryDto>()
+            .ForMember(d => d.Latitude, opt => opt.MapFrom(s => s.Location.Y))
+            .ForMember(d => d.Longitude, opt => opt.MapFrom(s => s.Location.X))
+            // BookCount viene valorizzato manualmente nel controller (vedi GetLibraries)
+            .ForMember(d => d.BookCount, opt => opt.Ignore());
         CreateMap<AddLibraryDto, LibraryEntity>();
     }
 

@@ -6,7 +6,7 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      component: () => import('@/pages/Home.vue'),
+      component: () => import('@/pages/home.vue'),
     },
     {
       path: '/app/',
@@ -15,7 +15,7 @@ const router = createRouter({
       children: [
         {
           path: '',
-          component: () => import('@/pages/app/Dashboard.vue'),
+          component: () => import('@/pages/app/dashboard.vue'),
         },
         {
           path: 'libraries',

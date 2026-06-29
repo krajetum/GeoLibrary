@@ -11,21 +11,26 @@
           <v-img
             :alt="library.title"
             @click="goToLibrary(library.id)"
-            :src="library.img"
+            :src="library.img ?? '/placeholder_library.jpg'"
             class="align-end"
             gradient="to bottom, rgba(0,0,0,.1), rgba(0,0,0,.5)"
             height="300px"
             cover
           >
             <v-card-title class="text-white">
-              {{ library.title }}
+              {{ library.name }}
 
-              <v-chip prepend-icon="mdi-book-open-variant" variant="outlined">30</v-chip>
+              <v-chip prepend-icon="mdi-book-open-variant" variant="outlined"
+                >{{ library.bookCount }}
+              </v-chip>
             </v-card-title>
+            <v-card-subtitle class="text-white">
+              {{ library.address }}
+            </v-card-subtitle>
           </v-img>
         </v-card>
       </v-col>
-      <v-col cols="3">
+      <v-col cols="3" v-if="isAddEnabled">
         <v-card variant="outlined" class="add-card" link to="/app/libraries/new" hovers>
           <div class="add-cta">
             <v-icon size="48" color="white">mdi-plus</v-icon>
@@ -41,6 +46,7 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 const props = defineProps<{
+  isAddEnabled?: boolean
   libraries?: Array<any>
 }>()
 

@@ -1,5 +1,6 @@
 using AutoMapper;
 using GeoLibrary.Server.Abstractions;
+using GeoLibrary.Server.Abstractions.Dtos.Book;
 using GeoLibrary.Server.Abstractions.Dtos.Library;
 using GeoLibrary.Server.Abstractions.Entities;
 using GeoLibrary.Server.Abstractions.Extensions;
@@ -62,6 +63,84 @@ public class LibraryController : ControllerBase
         return Ok(libraryDto);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetLibraries()
+    {
+        if (!_contextAccessor.TryGetUserId(out var userId))
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError);
+        }
+
+        // Il COUNT viene eseguito lato database (subquery sulla tabella Books), senza caricare i libri.
+        var libraries = await _db.Libraries
+            .Where(x => x.UserId == userId)
+            .AsNoTracking()
+            .Select(x => new { Entity = x, BookCount = x.Books.LongCount() })
+            .ToListAsync();
+
+        var result = libraries.Select(x =>
+        {
+            var dto = _mapper.Map<LibraryDto>(x.Entity);
+            dto.BookCount = x.BookCount;
+            return dto;
+        }).ToList();
+
+        return Ok(result);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetLibrary([FromRoute] Guid id)
+    {
+        if (!_contextAccessor.TryGetUserId(out var userId))
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError);
+        }
+
+        var library = await _db.Libraries.FirstOrDefaultAsync(x => x.Id == id);
+        
+        if (library is null)
+        {
+            return BadRequest();
+        }
+
+
+
+        return Ok(_mapper.Map<LibraryDto>(library));
+    }
+
+    [HttpGet("{id}/books")]
+    public async Task<IActionResult> GetLibraryBooks([FromRoute] Guid libraryId)
+    {
+        if (!_contextAccessor.TryGetUserId(out var userId))
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError);
+        }
+
+        var books = await _db.Books.Where(x => x.LibraryId == libraryId).AsNoTracking().ToListAsync();
+
+        if (books is null)
+        {
+            return BadRequest();
+        }
+
+
+
+        //return Ok(_mapper.ProjectTo<BookDto>(books.AsQueryable()));
+        return Ok(_mapper.ProjectTo<BookDto>(new List<BookEntity>
+        {
+            new() {
+                Id = Guid.NewGuid(),
+                Author = "Lorenzo",
+                Description = "La descrizione",
+                LibraryId = libraryId,
+                Title = "lorenzo Licalzi",
+                Library = null!
+            } 
+        }.AsQueryable()));
+
+
+    }
+
     /// <summary>
     /// Restituisce le librerie entro un raggio (in metri) da un punto geografico.
     /// Usa ST_DWithin con geography per distanza sferica accurata in metri.
@@ -108,4 +187,8 @@ public class LibraryController : ControllerBase
 
         return Ok(_mapper.Map<List<LibraryDto>>(libraries));
     }
+
+
+
+
 }

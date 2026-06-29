@@ -16,5 +16,5 @@ public class LibraryDto
     public required string PostalCode { get; set; } = string.Empty;
     public required double Latitude { get; set; } = 0.0;
     public required double Longitude { get; set; } = 0.0;
-    public IList<BookDto> Books { get; set; } = [];
+    public required long BookCount { get; set; } = 0;
 }
