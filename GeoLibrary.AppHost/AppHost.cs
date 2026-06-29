@@ -19,6 +19,10 @@ var server = builder.AddProject<Projects.GeoLibrary_Server_Api>("server")
     .WithReference(database)
     .WithReference(keycloak)
     .WithReference(cache)
+    // Stesso endpoint Keycloak usato dal frontend: garantisce che l'issuer atteso
+    // dall'API combaci con l'`iss` del token (entrambi derivati dalla stessa URL).
+    .WithEnvironment("Keycloak__Authority",
+        ReferenceExpression.Create($"{keycloak.GetEndpoint("http")}/realms/GeoLibrary"))
     .WaitFor(database)
     .WaitFor(keycloak)
     .WaitFor(cache)
@@ -27,6 +31,8 @@ var server = builder.AddProject<Projects.GeoLibrary_Server_Api>("server")
 
 var webfrontend = builder.AddViteApp("webfrontend", "../Frontend/GeoLibrary.Frontend")
                          .WithReference(server)
+                         .WithEnvironment("VITE_API_URL", server.GetEndpoint("http"))
+                         .WithEnvironment("VITE_KEYCLOAK_URL", keycloak.GetEndpoint("http"))
                          .WaitFor(server)
                          .WithEndpoint("http", endpoint =>
                          {

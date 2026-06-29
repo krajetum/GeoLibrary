@@ -1,11 +1,11 @@
 import keycloak from '@/core/auth/keycloak'
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000'
+const BASE_URL = import.meta.env.VITE_API_URL
 
 async function apiFetch(path: string, options: RequestInit = {}) {
   await keycloak.updateToken(30)
 
-  return fetch(`${BASE_URL}${path}`, {
+  return fetch(`${BASE_URL}/api${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',

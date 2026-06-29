@@ -5,15 +5,40 @@ namespace GeoLibrary.Server.Api.Extensions;
 
 public static class ProgramExtensions
 {
+    public const string FrontendCorsPolicy = "FrontendCorsPolicy";
 
-    public static IServiceCollection AddAuth(this IServiceCollection services, bool isDevelopment)
+    public static IServiceCollection AddFrontendCors(this IServiceCollection services, IConfiguration configuration)
     {
+        // Origini consentite lette da configurazione (Cors:AllowedOrigins),
+        // con fallback all'origine del dev server Vite.
+        var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+            ?? ["http://localhost:5173"];
+
+        services.AddCors(options =>
+        {
+            options.AddPolicy(FrontendCorsPolicy, policy =>
+                policy.WithOrigins(allowedOrigins)
+                      .AllowAnyHeader()
+                      .AllowAnyMethod());
+        });
+
+        return services;
+    }
+
+    public static IServiceCollection AddAuth(this IServiceCollection services, IConfiguration configuration, bool isDevelopment)
+    {
+        // Iniettata dall'AppHost (Keycloak__Authority) e derivata dallo stesso endpoint
+        // Keycloak usato dal frontend, così l'issuer combacia con l'`iss` del token.
+        var authority = configuration["Keycloak:Authority"]
+            ?? "https://localhost:8080/realms/GeoLibrary";
+
         services.AddAuthentication()
                 .AddJwtBearer(o =>
                 {
-                    o.Authority = "http://keycloak:8080/realms/GeoLibrary";
+                    o.Authority = authority;
                     o.Audience = "geolibrary-api";
                     o.RequireHttpsMetadata = !isDevelopment; // solo dev
+                    o.MapInboundClaims = false;
                 });
 
         services.AddAuthorization();

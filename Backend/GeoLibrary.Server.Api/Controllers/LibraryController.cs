@@ -2,29 +2,34 @@ using AutoMapper;
 using GeoLibrary.Server.Abstractions;
 using GeoLibrary.Server.Abstractions.Dtos.Library;
 using GeoLibrary.Server.Abstractions.Entities;
+using GeoLibrary.Server.Abstractions.Extensions;
 using GeoLibrary.Server.Abstractions.Validators;
 using GeoLibrary.Server.Database;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 
 namespace GeoLibrary.Server.Api.Controllers;
 
+[Authorize]
 [Route("api/[controller]")]
 [ApiController]
 public class LibraryController : ControllerBase
 {
     private readonly GeoLibraryDbContext _db;
     private readonly IMapper _mapper;
+    private readonly IHttpContextAccessor _contextAccessor;
     private readonly ILogger<LibraryController> _logger;
 
     private static readonly GeometryFactory _geometryFactory =
         NetTopologySuite.NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
 
-    public LibraryController(GeoLibraryDbContext db, IMapper mapper, ILogger<LibraryController> logger)
+    public LibraryController(GeoLibraryDbContext db, IMapper mapper, IHttpContextAccessor httpContextAccessor, ILogger<LibraryController> logger)
     {
         _db = db;
         _mapper = mapper;
+        _contextAccessor = httpContextAccessor;
         _logger = logger;
     }
 
@@ -39,12 +44,18 @@ public class LibraryController : ControllerBase
         if (!validationResult.IsValid)
             return BadRequest(validationResult.Errors);
 
+        if(!_contextAccessor.TryGetUserId(out var userId))
+        {
+            return Unauthorized();
+        }
+
         var entity = _mapper.Map<AddLibraryDto, LibraryEntity>(libraryDto);
 
         // NTS usa (X = Longitude, Y = Latitude)
         entity.Location = _geometryFactory.CreatePoint(
             new Coordinate(libraryDto.Longitude, libraryDto.Latitude));
 
+        entity.UserId = userId; 
         await _db.Libraries.AddAsync(entity);
         await _db.SaveChangesAsync();
 

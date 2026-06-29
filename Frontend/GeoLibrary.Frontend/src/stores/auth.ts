@@ -48,7 +48,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function fetchProfile() {
     try {
       const { apiFetch } = useApi()
-      const res = await apiFetch('/profile/me')
+      const res = await apiFetch('/user/profile/me')
       if (!res.ok) return
       const profile = (await res.json()) as Partial<UserInfo>
       userInfo.value = { ...userInfo.value, ...profile }
@@ -91,6 +91,14 @@ export const useAuthStore = defineStore('auth', () => {
     keycloak.login({ redirectUri: `${window.location.origin}${redirectPath}` })
   }
 
+  /**
+   * Apre la pagina di registrazione hostata da Keycloak.
+   * Richiede "User registration" abilitato nel realm.
+   */
+  function register(redirectPath = '/') {
+    keycloak.register({ redirectUri: `${window.location.origin}${redirectPath}` })
+  }
+
   function logout() {
     userInfo.value = emptyUserInfo()
     keycloak.logout({ redirectUri: window.location.origin })
@@ -109,6 +117,7 @@ export const useAuthStore = defineStore('auth', () => {
     username,
     init,
     login,
+    register,
     logout,
     hasRole,
     fetchProfile,

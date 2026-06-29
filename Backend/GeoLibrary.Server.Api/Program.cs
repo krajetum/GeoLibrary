@@ -1,3 +1,4 @@
+using GeoLibrary.Server.Abstractions.MappingProfiles;
 using GeoLibrary.Server.Api.Extensions;
 using GeoLibrary.Server.Database;
 using Microsoft.EntityFrameworkCore;
@@ -11,11 +12,14 @@ builder.AddServiceDefaults();
 builder.AddRedisClientBuilder("cache")
     .WithOutputCache();
 
+builder.AddRedisDistributedCache("cache");
+
 builder.Services.AddProblemDetails();
-builder.Services.AddAuth(builder.Environment.IsDevelopment());
+builder.Services.AddFrontendCors(builder.Configuration);
+builder.Services.AddAuth(builder.Configuration, builder.Environment.IsDevelopment());
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
-
+builder.Services.AddHttpContextAccessor();
 builder.AddHttpClients();
 
 // Aspire inietta la connection string con chiave "database" (da AppHost: postgres.AddDatabase("database")).
@@ -26,7 +30,7 @@ builder.Services.AddDbContext<GeoLibraryDbContext>(options =>
         o => o.UseNetTopologySuite()
     ));
 
-builder.Services.AddAutoMapper(config => { }, typeof(Program).Assembly);
+builder.Services.AddAutoMapper(config => { }, typeof(UserProfile).Assembly);
 
 var app = builder.Build();
 
@@ -50,6 +54,7 @@ if (app.Environment.IsDevelopment())
 app.UseOutputCache();
 app.MapDefaultEndpoints();
 app.UseFileServer();
+app.UseCors(ProgramExtensions.FrontendCorsPolicy);
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
