@@ -108,9 +108,12 @@ public class LibraryController : ControllerBase
         return Ok(_mapper.Map<LibraryDto>(library));
     }
 
-    [HttpGet("{id}/books")]
+    [HttpGet("{libraryId}/books")]
     public async Task<IActionResult> GetLibraryBooks([FromRoute] Guid libraryId)
     {
+
+        
+
         if (!_contextAccessor.TryGetUserId(out var userId))
         {
             return StatusCode(StatusCodes.Status500InternalServerError);
