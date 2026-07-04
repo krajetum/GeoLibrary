@@ -26,7 +26,21 @@ const router = createRouter({
             },
             {
               path: ':id',
-              component: () => import('@/pages/app/libraries/detail.vue'),
+              children: [
+                {
+                  path: '',
+                  component: () => import('@/pages/app/libraries/detail.vue'),
+                },
+                {
+                  path: 'book',
+                  children: [
+                    {
+                      path: 'new',
+                      component: () => import('@/pages/app/libraries/book/new.vue'),
+                    },
+                  ],
+                },
+              ],
             },
             {
               path: 'new',

@@ -12,6 +12,7 @@ public class BookProfile : Profile
     public BookProfile()
     {
         CreateMap<BookEntity, BookDto>();
+        CreateMap<AddBookDto, BookEntity>();
     }
 
 

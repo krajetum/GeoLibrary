@@ -91,21 +91,26 @@ public class LibraryController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetLibrary([FromRoute] Guid id)
     {
-        if (!_contextAccessor.TryGetUserId(out var userId))
+        // Dettaglio pubblico: non richiediamo l'utente. Se assente, IsAdmin resta false.
+        _contextAccessor.TryGetUserId(out var userId);
+
+        // Il COUNT dei libri viene eseguito lato database.
+        var result = await _db.Libraries
+            .AsNoTracking()
+            .Where(x => x.Id == id)
+            .Select(x => new { Entity = x, BookCount = x.Books.LongCount() })
+            .FirstOrDefaultAsync();
+
+        if (result is null)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError);
+            return NotFound();
         }
 
-        var library = await _db.Libraries.FirstOrDefaultAsync(x => x.Id == id);
-        
-        if (library is null)
-        {
-            return BadRequest();
-        }
+        var dto = _mapper.Map<LibraryDto>(result.Entity);
+        dto.BookCount = result.BookCount;
+        dto.IsAdmin = result.Entity.UserId == userId;
 
-
-
-        return Ok(_mapper.Map<LibraryDto>(library));
+        return Ok(dto);
     }
 
     [HttpGet("{libraryId}/books")]

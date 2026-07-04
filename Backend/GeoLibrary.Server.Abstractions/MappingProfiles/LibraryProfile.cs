@@ -14,8 +14,9 @@ public class LibraryProfile : Profile
         CreateMap<LibraryEntity, LibraryDto>()
             .ForMember(d => d.Latitude, opt => opt.MapFrom(s => s.Location.Y))
             .ForMember(d => d.Longitude, opt => opt.MapFrom(s => s.Location.X))
-            // BookCount viene valorizzato manualmente nel controller (vedi GetLibraries)
-            .ForMember(d => d.BookCount, opt => opt.Ignore());
+            // BookCount e IsAdmin vengono valorizzati manualmente nei controller
+            .ForMember(d => d.BookCount, opt => opt.Ignore())
+            .ForMember(d => d.IsAdmin, opt => opt.Ignore());
         CreateMap<AddLibraryDto, LibraryEntity>();
     }
 

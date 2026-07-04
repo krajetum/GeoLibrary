@@ -17,4 +17,10 @@ public class LibraryDto
     public required double Latitude { get; set; } = 0.0;
     public required double Longitude { get; set; } = 0.0;
     public required long BookCount { get; set; } = 0;
+
+    /// <summary>
+    /// True se l'utente autenticato è il proprietario della libreria (può modificarla).
+    /// Calcolato lato server; solo per pilotare la UI, l'autorizzazione vera è sugli endpoint di scrittura.
+    /// </summary>
+    public bool IsAdmin { get; set; } = false;
 }
