@@ -3,6 +3,7 @@ using System;
 using GeoLibrary.Server.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GeoLibrary.Server.Database.Migrations
 {
     [DbContext(typeof(GeoLibraryDbContext))]
-    partial class GeoLibraryDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260730125751_AddImageKeyToLibrary")]
+    partial class AddImageKeyToLibrary
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -61,9 +64,6 @@ namespace GeoLibrary.Server.Database.Migrations
                     b.Property<string>("ISBN")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<bool>("IsHidden")
-                        .HasColumnType("boolean");
 
                     b.Property<Guid>("LibraryId")
                         .HasColumnType("uuid");
@@ -123,15 +123,8 @@ namespace GeoLibrary.Server.Database.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("ImageKey")
                         .HasColumnType("text");
-
-                    b.Property<bool>("IsHidden")
-                        .HasColumnType("boolean");
 
                     b.Property<Point>("Location")
                         .IsRequired()

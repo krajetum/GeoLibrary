@@ -13,6 +13,7 @@ public class ISBNBookInfo
     public string Publisher { get; set; } = string.Empty;
     public string PublishedDate { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public string CoverUrl { get; set; } = string.Empty;
 }
 
 public class ISBNService(HttpClient httpClient)
@@ -58,13 +59,24 @@ public class ISBNService(HttpClient httpClient)
                 : notes.TryGetProperty("value", out var noteValue) ? noteValue.GetString() : null;
         }
 
+        // La copertina arriva in tre misure e solo se esiste davvero: si prende la più grande.
+        string? coverUrl = null;
+        if (book.TryGetProperty("cover", out var cover))
+        {
+            coverUrl = cover.TryGetProperty("large", out var large) ? large.GetString()
+                : cover.TryGetProperty("medium", out var medium) ? medium.GetString()
+                : cover.TryGetProperty("small", out var small) ? small.GetString()
+                : null;
+        }
+
         return new ISBNBookInfo
         {
             Title = title ?? string.Empty,
             Author = author ?? string.Empty,
             Publisher = publisher ?? string.Empty,
             PublishedDate = publishedDate ?? string.Empty,
-            Description = description ?? string.Empty
+            Description = description ?? string.Empty,
+            CoverUrl = coverUrl ?? string.Empty
         };
     }
 }

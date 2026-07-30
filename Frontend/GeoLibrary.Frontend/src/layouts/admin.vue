@@ -2,12 +2,13 @@
   <v-app>
     <system-bar />
     <v-main>
+      <breadcrumbs />
       <router-view />
     </v-main>
   </v-app>
 </template>
 
 <script setup lang="ts">
-import Search from '@/components/search.vue'
+import Breadcrumbs from '@/components/breadcrumbs.vue'
 import SystemBar from '@/layouts/components/adminBar.vue'
 </script>

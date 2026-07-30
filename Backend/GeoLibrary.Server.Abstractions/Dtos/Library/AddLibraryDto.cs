@@ -8,6 +8,7 @@ namespace GeoLibrary.Server.Abstractions.Dtos.Library;
 public class AddLibraryDto
 {
     public required string Name { get; set; }
+    public string Description { get; set; } = string.Empty;
     public required string Address { get; set; }
     public required string City { get; set; }
     public required string Country { get; set; }
@@ -15,4 +16,5 @@ public class AddLibraryDto
     public required string PostalCode { get; set; } = string.Empty;
     public required double Latitude { get; set; } = 0.0;
     public required double Longitude { get; set; } = 0.0;
+    public bool IsHidden { get; set; }
 }

@@ -25,6 +25,30 @@
       @update:options="loadItems"
       @click:row="goToBookDetail"
     >
+      <template #item.cover="{ item }">
+        <v-img
+          v-if="item.coverThumbnailUrl"
+          :src="item.coverThumbnailUrl"
+          :alt="`Copertina di ${item.title}`"
+          width="40"
+          height="56"
+          cover
+          class="my-1 rounded"
+        />
+        <v-icon v-else icon="mdi-book-outline" class="text-medium-emphasis" />
+      </template>
+
+      <template #item.title="{ item }">
+        {{ item.title }}
+        <v-icon
+          v-if="item.isHidden"
+          icon="mdi-eye-off-outline"
+          size="small"
+          class="ms-1 text-medium-emphasis"
+          aria-label="Nascosto agli altri utenti"
+        />
+      </template>
+
       <template #no-data>
         <span class="text-medium-emphasis">Nessun libro trovato.</span>
       </template>
@@ -69,6 +93,7 @@ interface DataTableOptions {
 }
 
 const headers = [
+  { title: 'Copertina', key: 'cover', sortable: false, width: 80 },
   { title: 'Titolo', key: 'title' },
   { title: 'Autore', key: 'author' },
   { title: 'ISBN', key: 'isbn' },
@@ -106,7 +131,6 @@ async function loadItems(options: DataTableOptions) {
 }
 
 function goToBookDetail(event: any, book: any) {
-  console.log('Navigating to book detail', book.item)
   router.push(`/app/libraries/${props.libraryId}/book/${book.item.id}`)
 }
 </script>

@@ -3,7 +3,7 @@
     <v-row>
       <v-col>
         <v-card variant="flat" class="rounded-lg overflow-hidden">
-          <v-img src="/placeholder_library.jpg" cover height="260">
+          <v-img :src="library.imageUrl ?? '/placeholder_library.jpg'" cover height="260">
             <div class="hero-overlay d-flex flex-column justify-end fill-height pa-4">
               <div class="text-white">
                 <h1 class="text-h4 font-weight-bold text-truncate">{{ library.name }}</h1>
@@ -22,6 +22,14 @@
               </v-chip>
               <v-chip size="small" variant="tonal" prepend-icon="mdi-eye-outline">
                 {{ library.viewsCount ?? 0 }} visite
+              </v-chip>
+              <v-chip
+                v-if="library.isHidden"
+                size="small"
+                variant="tonal"
+                prepend-icon="mdi-eye-off-outline"
+              >
+                Nascosta
               </v-chip>
             </div>
 
@@ -144,7 +152,7 @@ function onAddBook() {
 }
 
 function onImportCSV() {
-  router.push(`/app/libraries/${id}/import`)
+  router.push(`/app/libraries/${id}/book/import`)
 }
 
 function onShare() {

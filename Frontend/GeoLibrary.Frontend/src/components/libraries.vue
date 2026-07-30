@@ -9,9 +9,9 @@
       <v-col cols="3" v-for="library in libraries" :key="library.id">
         <v-card link hover>
           <v-img
-            :alt="library.title"
+            :alt="library.name"
             @click="goToLibrary(library.id)"
-            :src="library.img ?? '/placeholder_library.jpg'"
+            :src="library.thumbnailUrl ?? '/placeholder_library.jpg'"
             class="align-end"
             gradient="to bottom, rgba(0,0,0,.1), rgba(0,0,0,.5)"
             height="300px"

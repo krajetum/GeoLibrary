@@ -16,6 +16,14 @@ public class BookEntity
     public int TotalCopies { get; set; } = 0;
     public int ViewsCount { get; set; } = 0;
 
+    public string CoverImageKey { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Se true il libro è visibile solo al proprietario della libreria.
+    /// </summary>
+    public bool IsHidden { get; set; } = false;
+
+
     // Navigation property for loaning
     public ICollection<LoanRequestEntity> Bookings { get; set; } = [];
     public ICollection<BookDailyViewEntity> DailyViews { get; set; } = [];

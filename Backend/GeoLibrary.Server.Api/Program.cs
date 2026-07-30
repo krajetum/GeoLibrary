@@ -20,6 +20,7 @@ builder.Services.AddAuth(builder.Configuration, builder.Environment.IsDevelopmen
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddStorage(builder.Configuration);
 builder.AddHttpClients();
 
 // Aspire inietta la connection string con chiave "database" (da AppHost: postgres.AddDatabase("database")).

@@ -75,8 +75,8 @@ async function onImport() {
     })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
-    // TODO: il backend oggi ritorna solo Ok(), senza conteggio importati/scartati.
-    snackbar.text = 'Import completato.'
+    const result = await res.json()
+    snackbar.text = `Import completato: ${result.imported} aggiunti, ${result.skipped} scartati.`
     snackbar.color = 'success'
     snackbar.show = true
     router.push(`/app/libraries/${libraryId}`)

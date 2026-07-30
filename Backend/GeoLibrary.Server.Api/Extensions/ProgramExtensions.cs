@@ -1,5 +1,6 @@
 ﻿using GeoLibrary.Server.Abstractions;
 using GeoLibrary.Server.Services;
+using Minio;
 
 namespace GeoLibrary.Server.Api.Extensions;
 
@@ -42,6 +43,23 @@ public static class ProgramExtensions
                 });
 
         services.AddAuthorization();
+        return services;
+    }
+
+    public static IServiceCollection AddStorage(this IServiceCollection services, IConfiguration configuration)
+    {
+        // Endpoint iniettato dall'AppHost (Minio__Endpoint), es. http://localhost:9000
+        var endpoint = new Uri(configuration["Minio:Endpoint"] ?? "http://localhost:9000");
+
+        services.AddSingleton<IMinioClient>(_ => new MinioClient()
+            .WithEndpoint(endpoint.Host, endpoint.Port)
+            .WithCredentials(configuration["Minio:AccessKey"] ?? "minioadmin",
+                             configuration["Minio:SecretKey"] ?? "minioadmin")
+            .WithSSL(endpoint.Scheme == Uri.UriSchemeHttps)
+            .Build());
+
+        services.AddScoped<IStorageService, MinioStorageService>();
+
         return services;
     }
 

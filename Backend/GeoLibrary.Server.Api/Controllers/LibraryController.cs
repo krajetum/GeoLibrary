@@ -24,17 +24,21 @@ public class LibraryController : ControllerBase
     private readonly GeoLibraryDbContext _db;
     private readonly ISBNService _isbnService;
     private readonly IMapper _mapper;
+    private readonly IStorageService _storageService;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly IHttpContextAccessor _contextAccessor;
     private readonly ILogger<LibraryController> _logger;
 
     private static readonly GeometryFactory _geometryFactory =
         NetTopologySuite.NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
 
-    public LibraryController(GeoLibraryDbContext db, IMapper mapper, ISBNService isbnService, IHttpContextAccessor httpContextAccessor, ILogger<LibraryController> logger)
+    public LibraryController(GeoLibraryDbContext db, IMapper mapper, ISBNService isbnService, IStorageService storageService, IHttpClientFactory httpClientFactory, IHttpContextAccessor httpContextAccessor, ILogger<LibraryController> logger)
     {
         _db = db;
         _mapper = mapper;
         _isbnService = isbnService;
+        _storageService = storageService;
+        _httpClientFactory = httpClientFactory;
         _contextAccessor = httpContextAccessor;
         _logger = logger;
     }
@@ -61,11 +65,107 @@ public class LibraryController : ControllerBase
         entity.Location = _geometryFactory.CreatePoint(
             new Coordinate(libraryDto.Longitude, libraryDto.Latitude));
 
-        entity.UserId = userId; 
+        entity.UserId = userId;
         await _db.Libraries.AddAsync(entity);
         await _db.SaveChangesAsync();
 
-        return Ok(libraryDto);
+        // Si restituisce l'entità e non il dto in ingresso: al client serve l'Id per caricare l'immagine.
+        return Ok(_mapper.Map<LibraryDto>(entity));
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateLibrary([FromRoute] Guid id, AddLibraryDto libraryDto)
+    {
+        ArgumentNullException.ThrowIfNull(libraryDto);
+
+        var validator = new AddLibraryDtoValidator();
+        var validationResult = await validator.ValidateAsync(libraryDto);
+
+        if (!validationResult.IsValid)
+            return BadRequest(validationResult.Errors);
+
+        if (!_contextAccessor.TryGetUserId(out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var entity = await _db.Libraries.FirstOrDefaultAsync(x => x.Id == id);
+        if (entity is null)
+        {
+            return NotFound();
+        }
+
+        if (entity.UserId != userId)
+        {
+            return Forbid();
+        }
+
+        // Il dto non ha Id, UserId e ImageKey, quindi la mappatura sull'entità esistente li lascia intatti.
+        _mapper.Map(libraryDto, entity);
+        entity.Location = _geometryFactory.CreatePoint(
+            new Coordinate(libraryDto.Longitude, libraryDto.Latitude));
+
+        await _db.SaveChangesAsync();
+
+        return Ok(await ToDto(entity));
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteLibrary([FromRoute] Guid id)
+    {
+        if (!_contextAccessor.TryGetUserId(out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var library = await _db.Libraries.FirstOrDefaultAsync(x => x.Id == id);
+        if (library is null)
+        {
+            return NotFound();
+        }
+
+        if (library.UserId != userId)
+        {
+            return Forbid();
+        }
+
+        // Le FK sono in cascata: libri, prestiti e statistiche li cancella il database.
+        // Le immagini su MinIO restano invece orfane, non c'è pulizia dello storage.
+        _db.Libraries.Remove(library);
+        await _db.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    [HttpPost("{id}/image")]
+    public async Task<IActionResult> UploadImage([FromRoute] Guid id, IFormFile file)
+    {
+        if (!_contextAccessor.TryGetUserId(out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var library = await _db.Libraries.FirstOrDefaultAsync(x => x.Id == id);
+        if (library is null)
+        {
+            return NotFound();
+        }
+
+        if (library.UserId != userId)
+        {
+            return Forbid();
+        }
+
+        using var stream = file.OpenReadStream();
+        var key = await _storageService.UploadImage(stream, file.FileName, file.ContentType);
+        library.ImageKey = key;
+        await _db.SaveChangesAsync();
+
+        return Ok(new
+        {
+            ImageUrl = await _storageService.GetUrl(key),
+            ThumbnailUrl = await _storageService.GetThumbnailUrl(key)
+        });
     }
 
     [HttpGet]
@@ -83,12 +183,13 @@ public class LibraryController : ControllerBase
             .Select(x => new { Entity = x, BookCount = x.Books.LongCount() })
             .ToListAsync();
 
-        var result = libraries.Select(x =>
+        var result = new List<LibraryDto>();
+        foreach (var x in libraries)
         {
-            var dto = _mapper.Map<LibraryDto>(x.Entity);
+            var dto = await ToDto(x.Entity);
             dto.BookCount = x.BookCount;
-            return dto;
-        }).ToList();
+            result.Add(dto);
+        }
 
         return Ok(result);
     }
@@ -96,7 +197,6 @@ public class LibraryController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetLibrary([FromRoute] Guid id)
     {
-        // Dettaglio pubblico: non richiediamo l'utente. Se assente, IsAdmin resta false.
         _contextAccessor.TryGetUserId(out var userId);
 
         // Il COUNT dei libri viene eseguito lato database.
@@ -111,7 +211,13 @@ public class LibraryController : ControllerBase
             return NotFound();
         }
 
-        var dto = _mapper.Map<LibraryDto>(result.Entity);
+        // Se è nascosta, per chi non è il proprietario semplicemente non esiste.
+        if (result.Entity.IsHidden && result.Entity.UserId != userId)
+        {
+            return NotFound();
+        }
+
+        var dto = await ToDto(result.Entity);
         dto.BookCount = result.BookCount;
         dto.IsAdmin = result.Entity.UserId == userId;
 
@@ -121,12 +227,31 @@ public class LibraryController : ControllerBase
     [HttpGet("{libraryId}/books")]
     public async Task<IActionResult> GetLibraryBooks([FromRoute] Guid libraryId, [FromQuery] GetBooksQueryDto query)
     {
-        // Elenco pubblico: come per GetLibrary, non richiediamo l'utente.
+        _contextAccessor.TryGetUserId(out var userId);
+
+        var library = await _db.Libraries.AsNoTracking().FirstOrDefaultAsync(x => x.Id == libraryId);
+        if (library is null)
+        {
+            return NotFound();
+        }
+
+        var isOwner = library.UserId == userId;
+        if (library.IsHidden && !isOwner)
+        {
+            return NotFound();
+        }
+
         var page = query.Page < 1 ? 1 : query.Page;
 
         var booksQuery = _db.Books
             .AsNoTracking()
             .Where(x => x.LibraryId == libraryId);
+
+        // Il filtro va prima del CountAsync, altrimenti l'ultima pagina della tabella resta vuota.
+        if (!isOwner)
+        {
+            booksQuery = booksQuery.Where(x => !x.IsHidden);
+        }
 
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
@@ -156,7 +281,55 @@ public class LibraryController : ControllerBase
             .ProjectTo<BookDto>(_mapper.ConfigurationProvider)
             .ToListAsync();
 
+        // In elenco basta la miniatura. Le chiavi si leggono in una query sola, non una per libro.
+        var ids = items.Select(x => x.Id).ToList();
+        var covers = await _db.Books
+            .Where(x => ids.Contains(x.Id) && x.CoverImageKey != "")
+            .ToDictionaryAsync(x => x.Id, x => x.CoverImageKey);
+
+        foreach (var item in items)
+        {
+            if (covers.TryGetValue(item.Id, out var key))
+            {
+                item.CoverThumbnailUrl = await _storageService.GetThumbnailUrl(key);
+            }
+        }
+
         return Ok(new PagedResultDto<BookDto> { Items = items, TotalCount = totalCount });
+    }
+
+    [HttpGet("{libraryId}/books/{bookId}")]
+    public async Task<IActionResult> GetBook([FromRoute] Guid libraryId, [FromRoute] Guid bookId)
+    {
+
+        _contextAccessor.TryGetUserId(out var userId);
+
+        var book = await _db.Books.AsNoTracking()
+            .Include(x => x.Library)
+            .FirstOrDefaultAsync(x => x.LibraryId == libraryId && x.Id == bookId);
+
+        if (book is null)
+        {
+            return NotFound();
+        }
+
+        // Nascosto il libro o l'intera libreria: per gli altri utenti non esiste.
+        var isOwner = book.Library.UserId == userId;
+        if (!isOwner && (book.IsHidden || book.Library.IsHidden))
+        {
+            return NotFound();
+        }
+
+        var dto = _mapper.Map<BookDto>(book);
+        dto.IsAdmin = isOwner;
+
+        if (!string.IsNullOrEmpty(book.CoverImageKey))
+        {
+            dto.CoverImageUrl = await _storageService.GetUrl(book.CoverImageKey);
+            dto.CoverThumbnailUrl = await _storageService.GetThumbnailUrl(book.CoverImageKey);
+        }
+
+        return Ok(dto);
     }
 
     [HttpPost("{libraryId}/books/import")]
@@ -167,19 +340,43 @@ public class LibraryController : ControllerBase
             return BadRequest("File non valido.");
         }
 
-        // read the csv file
-        // the file contains ISBN and it will be used to fetch book details from an external API (e.g., Open Library)
+        if (!_contextAccessor.TryGetUserId(out var userId))
+        {
+            return Unauthorized();
+        }
 
+        var library = await _db.Libraries.FirstOrDefaultAsync(x => x.Id == libraryId);
+        if (library is null)
+        {
+            return NotFound();
+        }
+
+        if (library.UserId != userId)
+        {
+            return Forbid();
+        }
+
+        // Un ISBN per riga: titolo, autore e copertina arrivano da OpenLibrary.
+        // Split su '\n' e non su Environment.NewLine: il file può avere fine riga Windows o Unix.
         using var reader = new StreamReader(file.OpenReadStream());
-        foreach (var line in reader.ReadToEnd().Split(Environment.NewLine))
+        var content = await reader.ReadToEndAsync();
+
+        var imported = 0;
+        var skipped = 0;
+
+        foreach (var line in content.Split('\n'))
         {
             var isbn = line.Trim();
             if (string.IsNullOrWhiteSpace(isbn))
                 continue;
-            // Call external API to get book details by ISBN
+
             var bookDetails = await _isbnService.FetchBookDetails(isbn);
-            if (bookDetails == null)
+            if (bookDetails is null)
+            {
+                skipped++;
                 continue;
+            }
+
             var bookEntity = new BookEntity
             {
                 Id = Guid.NewGuid(),
@@ -188,13 +385,39 @@ public class LibraryController : ControllerBase
                 Description = bookDetails.Description,
                 ISBN = isbn,
                 LibraryId = libraryId,
-                TotalCopies = 1
+                TotalCopies = 1,
+                CoverImageKey = await DownloadCover(bookDetails.CoverUrl, isbn)
             };
+
             await _db.Books.AddAsync(bookEntity);
+            imported++;
         }
 
         await _db.SaveChangesAsync();
-        return Ok();
+
+        return Ok(new { Imported = imported, Skipped = skipped });
+    }
+
+    /// <summary>
+    /// Scarica la copertina indicata da OpenLibrary e la carica come quelle manuali.
+    /// Restituisce la chiave, o stringa vuota se il libro non ha copertina.
+    /// </summary>
+    private async Task<string> DownloadCover(string coverUrl, string isbn)
+    {
+        if (string.IsNullOrEmpty(coverUrl))
+            return string.Empty;
+
+        var client = _httpClientFactory.CreateClient();
+        var response = await client.GetAsync(coverUrl);
+        if (!response.IsSuccessStatusCode)
+            return string.Empty;
+
+        // La risposta HTTP non è riavvolgibile, mentre UploadImage rilegge lo stream per la miniatura.
+        using var image = new MemoryStream();
+        await response.Content.CopyToAsync(image);
+        image.Position = 0;
+
+        return await _storageService.UploadImage(image, $"{isbn}.jpg", "image/jpeg");
     }
 
     /// <summary>
@@ -209,8 +432,9 @@ public class LibraryController : ControllerBase
 
         var center = _geometryFactory.CreatePoint(new Coordinate(dto.Longitude, dto.Latitude));
 
+        // Le ricerche servono a scoprire librerie altrui: le nascoste non compaiono a nessuno.
         var libraries = await _db.Libraries
-            .Where(l => l.Location != null &&
+            .Where(l => !l.IsHidden && l.Location != null &&
                         EF.Functions.IsWithinDistance(l.Location, center, dto.RadiusKilometers * 1000, true))
             .ToListAsync();
 
@@ -238,13 +462,26 @@ public class LibraryController : ControllerBase
         var polygon = _geometryFactory.CreatePolygon([.. coords]);
 
         var libraries = await _db.Libraries
-            .Where(l => l.Location != null && polygon.Contains(l.Location))
+            .Where(l => !l.IsHidden && l.Location != null && polygon.Contains(l.Location))
             .ToListAsync();
 
         return Ok(_mapper.Map<List<LibraryDto>>(libraries));
     }
 
+    /// <summary>
+    /// Mappa la libreria aggiungendo le URL dell'immagine, che sono firmate e scadono
+    /// dopo un'ora: vanno quindi rigenerate a ogni risposta.
+    /// </summary>
+    private async Task<LibraryDto> ToDto(LibraryEntity library)
+    {
+        var dto = _mapper.Map<LibraryDto>(library);
 
+        if (!string.IsNullOrEmpty(library.ImageKey))
+        {
+            dto.ImageUrl = await _storageService.GetUrl(library.ImageKey);
+            dto.ThumbnailUrl = await _storageService.GetThumbnailUrl(library.ImageKey);
+        }
 
-
+        return dto;
+    }
 }

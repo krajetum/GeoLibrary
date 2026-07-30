@@ -7,4 +7,8 @@ public class AddBookDto
     public string Description { get; set; } = string.Empty;
     public required string Author { get; set; }
     public string ISBN { get; set; } = string.Empty;
+
+    // Non required: altrimenti a rifiutare la richiesta sarebbe il deserializzatore, non il validator.
+    public int TotalCopies { get; set; }
+    public bool IsHidden { get; set; }
 }

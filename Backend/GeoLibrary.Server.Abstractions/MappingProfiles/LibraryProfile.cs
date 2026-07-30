@@ -16,7 +16,9 @@ public class LibraryProfile : Profile
             .ForMember(d => d.Longitude, opt => opt.MapFrom(s => s.Location.X))
             // BookCount e IsAdmin vengono valorizzati manualmente nei controller
             .ForMember(d => d.BookCount, opt => opt.Ignore())
-            .ForMember(d => d.IsAdmin, opt => opt.Ignore());
+            .ForMember(d => d.IsAdmin, opt => opt.Ignore())
+            .ForMember(d => d.ImageUrl, opt => opt.Ignore())
+            .ForMember(d => d.ThumbnailUrl, opt => opt.Ignore());
         CreateMap<AddLibraryDto, LibraryEntity>();
     }
 

@@ -19,6 +19,7 @@ const router = createRouter({
         },
         {
           path: 'libraries',
+          name: 'libraries',
           children: [
             {
               path: '',
@@ -26,25 +27,39 @@ const router = createRouter({
             },
             {
               path: ':id',
+              name: 'library-detail',
               children: [
                 {
                   path: '',
                   component: () => import('@/pages/app/libraries/detail.vue'),
                 },
                 {
+                  path: 'edit',
+                  // meta.title è l'ultima briciola delle pagine di azione (vedi breadcrumbs.vue)
+                  meta: { title: 'Modifica' },
+                  component: () => import('@/pages/app/libraries/edit.vue'),
+                },
+                {
                   path: 'book',
                   children: [
                     {
                       path: 'new',
+                      meta: { title: 'Nuovo libro' },
                       component: () => import('@/pages/app/libraries/book/new.vue'),
                     },
                     {
                       path: 'import',
+                      meta: { title: 'Importa libri' },
                       component: () => import('@/pages/app/libraries/book/import.vue'),
                     },
                     {
-                      path: ':bookid',
+                      path: ':bookId',
                       component: () => import('@/pages/app/libraries/book/detail.vue'),
+                    },
+                    {
+                      path: ':bookId/edit',
+                      meta: { title: 'Modifica' },
+                      component: () => import('@/pages/app/libraries/book/edit.vue'),
                     },
                   ],
                 },
@@ -52,6 +67,7 @@ const router = createRouter({
             },
             {
               path: 'new',
+              meta: { title: 'Nuova libreria' },
               component: () => import('@/pages/app/libraries/new.vue'),
             },
           ],
