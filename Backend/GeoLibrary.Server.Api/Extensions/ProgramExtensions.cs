@@ -54,7 +54,11 @@ public static class ProgramExtensions
             client.DefaultRequestHeaders.UserAgent.ParseAdd("GeoLibraryServerApi/1.0 (https://github.com/GeoLibrary/GeoLibrary)");
         });
 
-
+        builder.Services.AddHttpClient<ISBNService>(client =>
+        {
+            client.BaseAddress = new Uri(builder.Configuration["ISBN:BaseUrl"] ?? "https://openlibrary.org/api/books");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("GeoLibraryServerApi/1.0 (https://github.com/GeoLibrary/GeoLibrary)");
+        });
 
 
         return builder;

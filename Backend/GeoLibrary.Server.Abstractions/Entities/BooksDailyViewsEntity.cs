@@ -11,7 +11,7 @@ public class BookDailyViewEntity
     /// <summary>
     /// Navigation property to the associated BookEntity.
     /// </summary>
-    public required BookEntity Book { get; set; }
+    public BookEntity Book { get; set; } = null!;
 
     public required DateTime Date { get; set; }
     public long ViewsCount { get; set; } = 0;

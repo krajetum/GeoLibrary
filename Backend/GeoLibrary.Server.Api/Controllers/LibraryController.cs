@@ -1,11 +1,14 @@
 using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using GeoLibrary.Server.Abstractions;
+using GeoLibrary.Server.Abstractions.Dtos;
 using GeoLibrary.Server.Abstractions.Dtos.Book;
 using GeoLibrary.Server.Abstractions.Dtos.Library;
 using GeoLibrary.Server.Abstractions.Entities;
 using GeoLibrary.Server.Abstractions.Extensions;
 using GeoLibrary.Server.Abstractions.Validators;
 using GeoLibrary.Server.Database;
+using GeoLibrary.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +22,7 @@ namespace GeoLibrary.Server.Api.Controllers;
 public class LibraryController : ControllerBase
 {
     private readonly GeoLibraryDbContext _db;
+    private readonly ISBNService _isbnService;
     private readonly IMapper _mapper;
     private readonly IHttpContextAccessor _contextAccessor;
     private readonly ILogger<LibraryController> _logger;
@@ -26,10 +30,11 @@ public class LibraryController : ControllerBase
     private static readonly GeometryFactory _geometryFactory =
         NetTopologySuite.NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
 
-    public LibraryController(GeoLibraryDbContext db, IMapper mapper, IHttpContextAccessor httpContextAccessor, ILogger<LibraryController> logger)
+    public LibraryController(GeoLibraryDbContext db, IMapper mapper, ISBNService isbnService, IHttpContextAccessor httpContextAccessor, ILogger<LibraryController> logger)
     {
         _db = db;
         _mapper = mapper;
+        _isbnService = isbnService;
         _contextAccessor = httpContextAccessor;
         _logger = logger;
     }
@@ -114,39 +119,82 @@ public class LibraryController : ControllerBase
     }
 
     [HttpGet("{libraryId}/books")]
-    public async Task<IActionResult> GetLibraryBooks([FromRoute] Guid libraryId)
+    public async Task<IActionResult> GetLibraryBooks([FromRoute] Guid libraryId, [FromQuery] GetBooksQueryDto query)
     {
+        // Elenco pubblico: come per GetLibrary, non richiediamo l'utente.
+        var page = query.Page < 1 ? 1 : query.Page;
 
-        
+        var booksQuery = _db.Books
+            .AsNoTracking()
+            .Where(x => x.LibraryId == libraryId);
 
-        if (!_contextAccessor.TryGetUserId(out var userId))
+        if (!string.IsNullOrWhiteSpace(query.Search))
         {
-            return StatusCode(StatusCodes.Status500InternalServerError);
+            var pattern = $"%{query.Search.Trim()}%";
+            booksQuery = booksQuery.Where(x =>
+                EF.Functions.ILike(x.Title, pattern) ||
+                EF.Functions.ILike(x.Author, pattern) ||
+                EF.Functions.ILike(x.ISBN, pattern));
         }
 
-        var books = await _db.Books.Where(x => x.LibraryId == libraryId).AsNoTracking().ToListAsync();
-
-        if (books is null)
+        booksQuery = query.SortBy?.ToLowerInvariant() switch
         {
-            return BadRequest();
+            "author" => query.SortDesc ? booksQuery.OrderByDescending(x => x.Author) : booksQuery.OrderBy(x => x.Author),
+            "isbn" => query.SortDesc ? booksQuery.OrderByDescending(x => x.ISBN) : booksQuery.OrderBy(x => x.ISBN),
+            _ => query.SortDesc ? booksQuery.OrderByDescending(x => x.Title) : booksQuery.OrderBy(x => x.Title),
+        };
+
+        var totalCount = await booksQuery.CountAsync();
+
+        // itemsPerPage <= 0 (es. "Tutti" di Vuetify, valore -1) restituisce l'intero risultato senza paginare.
+        if (query.ItemsPerPage > 0)
+        {
+            booksQuery = booksQuery.Skip((page - 1) * query.ItemsPerPage).Take(query.ItemsPerPage);
         }
 
+        var items = await booksQuery
+            .ProjectTo<BookDto>(_mapper.ConfigurationProvider)
+            .ToListAsync();
 
+        return Ok(new PagedResultDto<BookDto> { Items = items, TotalCount = totalCount });
+    }
 
-        //return Ok(_mapper.ProjectTo<BookDto>(books.AsQueryable()));
-        return Ok(_mapper.ProjectTo<BookDto>(new List<BookEntity>
+    [HttpPost("{libraryId}/books/import")]
+    public async Task<IActionResult> MassiveBookImport([FromRoute] Guid libraryId, [FromForm] IFormFile file)
+    {
+        if (file == null || file.Length == 0)
         {
-            new() {
+            return BadRequest("File non valido.");
+        }
+
+        // read the csv file
+        // the file contains ISBN and it will be used to fetch book details from an external API (e.g., Open Library)
+
+        using var reader = new StreamReader(file.OpenReadStream());
+        foreach (var line in reader.ReadToEnd().Split(Environment.NewLine))
+        {
+            var isbn = line.Trim();
+            if (string.IsNullOrWhiteSpace(isbn))
+                continue;
+            // Call external API to get book details by ISBN
+            var bookDetails = await _isbnService.FetchBookDetails(isbn);
+            if (bookDetails == null)
+                continue;
+            var bookEntity = new BookEntity
+            {
                 Id = Guid.NewGuid(),
-                Author = "Lorenzo",
-                Description = "La descrizione",
+                Title = bookDetails.Title,
+                Author = bookDetails.Author,
+                Description = bookDetails.Description,
+                ISBN = isbn,
                 LibraryId = libraryId,
-                Title = "lorenzo Licalzi",
-                Library = null!
-            } 
-        }.AsQueryable()));
+                TotalCopies = 1
+            };
+            await _db.Books.AddAsync(bookEntity);
+        }
 
-
+        await _db.SaveChangesAsync();
+        return Ok();
     }
 
     /// <summary>

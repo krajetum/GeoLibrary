@@ -34,6 +34,9 @@
                 <v-btn variant="tonal" prepend-icon="mdi-book-plus" @click="onAddBook">
                   Aggiungi libro
                 </v-btn>
+                <v-btn prepend-icon="mdi-file-upload-outline" @click="onImportCSV"
+                  >Importa CSV</v-btn
+                >
               </template>
 
               <v-menu location="bottom end">
@@ -75,13 +78,7 @@
 
     <v-row>
       <v-col>
-        <v-data-table
-          :items-per-page="itemsPerPage"
-          :headers="headers"
-          :items="books"
-          :loading="loadingBooks"
-          hover
-        ></v-data-table>
+        <books-table :library-id="id" />
       </v-col>
     </v-row>
 
@@ -109,20 +106,13 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
+import BooksTable from '@/components/books-table.vue'
 
 const api = useApi()
 const route = useRoute()
 const router = useRouter()
 
 const library = ref<any>({})
-const books = ref<any[]>([])
-const headers = ref([
-  { title: 'Title', key: 'title' },
-  { title: 'Author', key: 'author' },
-])
-
-const loadingBooks = ref(true)
-const itemsPerPage = ref(5)
 
 const confirmDelete = ref(false)
 const deleting = ref(false)
@@ -143,14 +133,6 @@ onMounted(async () => {
   } else {
     library.value = await response.json()
   }
-
-  const booksResponse = await api.apiFetch(`/library/${id}/books`)
-  if (booksResponse.status !== 200) {
-    notify('Impossibile caricare i libri.', 'error')
-  } else {
-    books.value = await booksResponse.json()
-  }
-  loadingBooks.value = false
 })
 
 function onEdit() {
@@ -159,6 +141,10 @@ function onEdit() {
 
 function onAddBook() {
   router.push(`/app/libraries/${id}/book/new`)
+}
+
+function onImportCSV() {
+  router.push(`/app/libraries/${id}/import`)
 }
 
 function onShare() {

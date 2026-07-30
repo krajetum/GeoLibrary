@@ -38,6 +38,14 @@ const router = createRouter({
                       path: 'new',
                       component: () => import('@/pages/app/libraries/book/new.vue'),
                     },
+                    {
+                      path: 'import',
+                      component: () => import('@/pages/app/libraries/book/import.vue'),
+                    },
+                    {
+                      path: ':bookid',
+                      component: () => import('@/pages/app/libraries/book/detail.vue'),
+                    },
                   ],
                 },
               ],

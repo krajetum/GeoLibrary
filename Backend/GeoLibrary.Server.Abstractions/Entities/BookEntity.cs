@@ -11,7 +11,7 @@ public class BookEntity
     /// </summary>
     public string ISBN { get; set; } = string.Empty;
     public required Guid LibraryId { get; set; }
-    public required LibraryEntity Library { get; set; }
+    public LibraryEntity Library { get; set; } = null!;
 
     public int TotalCopies { get; set; } = 0;
     public int ViewsCount { get; set; } = 0;

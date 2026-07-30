@@ -10,7 +10,7 @@ public class LibraryDailyViewEntity
     /// <summary>
     /// Navigation property to the associated LibraryEntity.
     /// </summary>
-    public required LibraryEntity LibraryEntity { get; set; }
+    public LibraryEntity LibraryEntity { get; set; } = null!;
 
     public required DateTime Date { get; set; }
     public long ViewsCount { get; set; } = 0;
