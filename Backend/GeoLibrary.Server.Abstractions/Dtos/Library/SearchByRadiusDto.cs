@@ -7,4 +7,10 @@ public class SearchByRadiusDto
 
     /// <summary>Radius in kilometers.</summary>
     public double RadiusKilometers { get; set; }
+
+    /// <summary>
+    /// Testo opzionale da cercare (titolo, autore o ISBN) fra i risultati dell'area.
+    /// Usato solo dalla ricerca dei libri.
+    /// </summary>
+    public string? Search { get; set; }
 }

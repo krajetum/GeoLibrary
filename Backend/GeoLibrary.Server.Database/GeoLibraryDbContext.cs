@@ -45,6 +45,10 @@ public class GeoLibraryDbContext(DbContextOptions<GeoLibraryDbContext> options) 
             entity.HasOne(bdv => bdv.Book)
                   .WithMany(b => b.DailyViews)
                   .HasForeignKey(bdv => bdv.BookId);
+
+            entity.HasOne(bdv => bdv.Library)
+                  .WithMany()
+                  .HasForeignKey(bdv => bdv.LibraryId);
         });
 
         modelBuilder.Entity<LibraryDailyViewEntity>(entity =>

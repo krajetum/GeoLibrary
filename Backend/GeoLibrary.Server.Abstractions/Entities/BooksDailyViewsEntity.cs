@@ -7,6 +7,8 @@ namespace GeoLibrary.Server.Abstractions.Entities;
 
 public class BookDailyViewEntity
 {
+    public required Guid LibraryId { get; set; }
+    public LibraryEntity Library { get; set; } = null!;
     public required Guid BookId { get; set; }
     /// <summary>
     /// Navigation property to the associated BookEntity.
