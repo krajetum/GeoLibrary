@@ -43,7 +43,10 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import { useAppLink } from '@/composables/useAppLink'
+
 const router = useRouter()
+const { libraryPath } = useAppLink()
 
 const props = defineProps<{
   isAddEnabled?: boolean
@@ -51,7 +54,7 @@ const props = defineProps<{
 }>()
 
 function goToLibrary(id: string) {
-  router.push(`/app/libraries/${id}`)
+  router.push(libraryPath(id))
 }
 </script>
 

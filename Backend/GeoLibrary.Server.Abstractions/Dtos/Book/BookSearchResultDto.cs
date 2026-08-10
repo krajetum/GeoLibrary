@@ -17,5 +17,11 @@ public class BookSearchResultDto
     public double Latitude { get; set; }
     public double Longitude { get; set; }
 
+    /// <summary>
+    /// True quando le coordinate sono state arrotondate perché chi cerca non ha
+    /// diritto alla posizione esatta della libreria.
+    /// </summary>
+    public bool IsApproximateLocation { get; set; }
+
     public string? CoverThumbnailUrl { get; set; }
 }

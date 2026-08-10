@@ -3,6 +3,7 @@
     <v-app-bar-title>GeoLibrary</v-app-bar-title>
     <v-btn text to="/app" exact> Home </v-btn>
     <v-btn text to="/app/libraries" exact> My Libraries </v-btn>
+    <v-btn text to="/app/loans" exact> Prestiti </v-btn>
     <v-btn text v-if="auth.hasRole('admin')" exact>Administration Panel</v-btn>
     <v-spacer />
     <v-menu min-width="200px" :close-on-content-click="false">

@@ -134,6 +134,10 @@
           <div class="px-4 py-3 border-b text-body-2 text-medium-emphasis">
             <b class="text-h6 text-high-emphasis">{{ noArea ? '—' : results.length }}</b>
             libri in quest'area
+            <div v-if="hasApproximateResults" class="text-caption mt-1">
+              Le posizioni sono approssimate: l'indirizzo esatto viene mostrato quando il
+              proprietario accetta la richiesta di prestito.
+            </div>
           </div>
 
           <v-skeleton-loader v-if="loading" type="list-item-avatar-two-line@4" />
@@ -161,7 +165,7 @@
 
               <template #append>
                 <div class="d-flex flex-column align-end ga-1">
-                  <span class="text-body-2 text-primary">{{ formatDistance(book.distance) }}</span>
+                  <span class="text-body-2 text-primary">{{ formatDistance(book) }}</span>
                   <v-chip size="x-small" variant="tonal">{{ book.libraryName }}</v-chip>
                 </div>
               </template>
@@ -192,6 +196,7 @@ import markerIcon from 'leaflet/dist/images/marker-icon.png'
 import markerShadow from 'leaflet/dist/images/marker-shadow.png'
 import { useGeolocation } from '@vueuse/core'
 import { useApi } from '@/composables/useApi'
+import { useAppLink } from '@/composables/useAppLink'
 
 // Fix noto Leaflet + Vite: senza questo le icone del marker non si caricano
 delete (Icon.Default.prototype as any)._getIconUrl
@@ -209,6 +214,7 @@ const props = defineProps<{
 
 const router = useRouter()
 const { apiFetch } = useApi()
+const { bookPath } = useAppLink()
 
 const mode = ref<'radius' | 'draw'>('radius')
 const query = ref('')
@@ -240,6 +246,8 @@ const emptyMessage = computed(() => {
   if (noArea.value) return "Disegna un'area sulla mappa per vedere i libri che contiene."
   return "Nessun libro in quest'area: prova ad allargare il raggio o a spostare il centro."
 })
+
+const hasApproximateResults = computed(() => results.value.some((b) => b.isApproximateLocation))
 
 // Un segnaposto per libreria: più libri della stessa libreria condividono la posizione.
 const resultLibraries = computed(() => {
@@ -397,8 +405,12 @@ function formatKm(km: number) {
   return `${km.toFixed(1).replace('.', ',')} km`
 }
 
-function formatDistance(meters: number) {
-  return meters < 1000 ? `${Math.round(meters)} m` : formatKm(meters / 1000)
+// La distanza è calcolata sulle coordinate che il server ha restituito: se sono
+// arrotondate lo è anche lei, e va detto invece di darla per precisa.
+function formatDistance(book: any) {
+  const text =
+    book.distance < 1000 ? `${Math.round(book.distance)} m` : formatKm(book.distance / 1000)
+  return book.isApproximateLocation ? `~${text}` : text
 }
 
 function initials(title: string) {
@@ -411,6 +423,6 @@ function initials(title: string) {
 }
 
 function goToBook(book: any) {
-  router.push(`/app/libraries/${book.libraryId}/book/${book.id}`)
+  router.push(bookPath(book.libraryId, book.id))
 }
 </script>

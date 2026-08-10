@@ -4,9 +4,30 @@ import { useAuthStore } from '@/stores/auth'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    // Area pubblica: consultabile senza registrarsi. Le schede di libreria e libro
+    // sono gli stessi componenti dell'area autenticata, solo con un altro layout.
     {
       path: '/',
-      component: () => import('@/pages/home.vue'),
+      component: () => import('@/layouts/public.vue'),
+      children: [
+        {
+          path: '',
+          component: () => import('@/pages/Home.vue'),
+        },
+        {
+          path: 'libraries/:id',
+          children: [
+            {
+              path: '',
+              component: () => import('@/pages/app/libraries/detail.vue'),
+            },
+            {
+              path: 'book/:bookId',
+              component: () => import('@/pages/app/libraries/book/detail.vue'),
+            },
+          ],
+        },
+      ],
     },
     {
       path: '/app/',
@@ -15,7 +36,12 @@ const router = createRouter({
       children: [
         {
           path: '',
-          component: () => import('@/pages/app/dashboard.vue'),
+          component: () => import('@/pages/app/Dashboard.vue'),
+        },
+        {
+          path: 'loans',
+          meta: { title: 'Prestiti' },
+          component: () => import('@/pages/app/loans.vue'),
         },
         {
           path: 'libraries',

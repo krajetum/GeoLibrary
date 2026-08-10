@@ -60,9 +60,11 @@
 import { ref, watch } from 'vue'
 import { useDebounceFn } from '@vueuse/core'
 import { useApi } from '@/composables/useApi'
+import { useAppLink } from '@/composables/useAppLink'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const { bookPath } = useAppLink()
 
 const props = defineProps<{ libraryId: string }>()
 
@@ -131,6 +133,6 @@ async function loadItems(options: DataTableOptions) {
 }
 
 function goToBookDetail(event: any, book: any) {
-  router.push(`/app/libraries/${props.libraryId}/book/${book.item.id}`)
+  router.push(bookPath(props.libraryId, book.item.id))
 }
 </script>

@@ -9,7 +9,7 @@
                 <h1 class="text-h4 font-weight-bold text-truncate">{{ library.name }}</h1>
                 <div class="d-flex align-center mt-1">
                   <v-icon size="18" class="me-1">mdi-map-marker</v-icon>
-                  <span class="text-body-2 text-truncate">{{ library.address }}</span>
+                  <span class="text-body-2 text-truncate">{{ position }}</span>
                 </div>
               </div>
             </div>
@@ -30,6 +30,14 @@
                 prepend-icon="mdi-eye-off-outline"
               >
                 Nascosta
+              </v-chip>
+              <v-chip
+                v-if="library.isApproximateLocation"
+                size="small"
+                variant="tonal"
+                prepend-icon="mdi-map-marker-radius"
+              >
+                Posizione approssimativa
               </v-chip>
             </div>
 
@@ -111,7 +119,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import BooksTable from '@/components/books-table.vue'
@@ -127,6 +135,12 @@ const deleting = ref(false)
 const snackbar = reactive({ show: false, text: '', color: 'success' })
 
 const id = route.params.id as string
+
+// Il server manda l'indirizzo solo a chi ne ha diritto: quando manca resta la città.
+const position = computed(() => {
+  const l = library.value
+  return l.address ?? [l.city, l.countryCode].filter(Boolean).join(', ')
+})
 
 function notify(text: string, color: 'success' | 'error' = 'success') {
   snackbar.text = text

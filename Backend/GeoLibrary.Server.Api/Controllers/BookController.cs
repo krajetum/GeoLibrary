@@ -178,6 +178,7 @@ public class BookController : ControllerBase
     /// Restituisce i libri delle librerie che si trovano entro un raggio (in chilometri) da un punto.
     /// Come per le librerie si usa ST_DWithin con geography, per avere una distanza sferica in metri.
     /// </summary>
+    [AllowAnonymous]
     [HttpGet("search/radius")]
     public async Task<IActionResult> SearchByRadius([FromQuery] SearchByRadiusDto dto)
     {
@@ -196,6 +197,7 @@ public class BookController : ControllerBase
     /// Restituisce i libri delle librerie che si trovano dentro un poligono disegnato sulla mappa.
     /// Le coordinate devono essere in ordine; il poligono viene chiuso automaticamente.
     /// </summary>
+    [AllowAnonymous]
     [HttpPost("search/polygon")]
     public async Task<IActionResult> SearchByPolygon([FromBody] SearchByPolygonDto dto)
     {
@@ -257,6 +259,7 @@ public class BookController : ControllerBase
                 b.Author,
                 b.LibraryId,
                 LibraryName = b.Library.Name,
+                LibraryUserId = b.Library.UserId,
                 // NTS usa (X = Longitude, Y = Latitude)
                 Latitude = b.Library.Location!.Y,
                 Longitude = b.Library.Location!.X,
@@ -264,9 +267,16 @@ public class BookController : ControllerBase
             })
             .ToListAsync();
 
+        _contextAccessor.TryGetUserId(out var userId);
+        var withApprovedLoan = await LibrariesWithApprovedLoan(userId);
+
         var results = new List<BookSearchResultDto>();
         foreach (var b in books)
         {
+            // Il filtro spaziale ha già lavorato sulle coordinate vere: qui si arrotonda
+            // solo quello che esce, così la ricerca resta esatta ma la risposta no.
+            var exactLocation = b.LibraryUserId == userId || withApprovedLoan.Contains(b.LibraryId);
+
             results.Add(new BookSearchResultDto
             {
                 Id = b.Id,
@@ -274,8 +284,9 @@ public class BookController : ControllerBase
                 Author = b.Author,
                 LibraryId = b.LibraryId,
                 LibraryName = b.LibraryName,
-                Latitude = b.Latitude,
-                Longitude = b.Longitude,
+                Latitude = exactLocation ? b.Latitude : Math.Round(b.Latitude, 2),
+                Longitude = exactLocation ? b.Longitude : Math.Round(b.Longitude, 2),
+                IsApproximateLocation = !exactLocation,
                 // Le URL sono firmate e scadono: vanno rigenerate a ogni risposta.
                 CoverThumbnailUrl = string.IsNullOrEmpty(b.CoverImageKey)
                     ? null
@@ -284,5 +295,25 @@ public class BookController : ControllerBase
         }
 
         return results;
+    }
+
+    /// <summary>
+    /// Librerie da cui l'utente ha un prestito approvato in corso: sono quelle di cui
+    /// può vedere la posizione esatta, perché deve andarci a ritirare il libro.
+    /// </summary>
+    private async Task<HashSet<Guid>> LibrariesWithApprovedLoan(Guid userId)
+    {
+        if (userId == Guid.Empty)
+        {
+            return [];
+        }
+
+        var libraryIds = await _db.LoanRequests
+            .Where(x => x.UserId == userId && x.Status == LoanRequestStatus.Approved)
+            .Join(_db.Books, loan => loan.BookId, book => book.Id, (loan, book) => book.LibraryId)
+            .Distinct()
+            .ToListAsync();
+
+        return [.. libraryIds];
     }
 }

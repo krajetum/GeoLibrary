@@ -107,7 +107,7 @@ public class LibraryController : ControllerBase
 
         await _db.SaveChangesAsync();
 
-        return Ok(await ToDto(entity));
+        return Ok(await ToDto(entity, exactLocation: true));
     }
 
     [HttpDelete("{id}")]
@@ -186,7 +186,8 @@ public class LibraryController : ControllerBase
         var result = new List<LibraryDto>();
         foreach (var x in libraries)
         {
-            var dto = await ToDto(x.Entity);
+            // Sono le librerie dell'utente: la posizione esatta è sempre la sua.
+            var dto = await ToDto(x.Entity, exactLocation: true);
             dto.BookCount = x.BookCount;
             result.Add(dto);
         }
@@ -194,6 +195,7 @@ public class LibraryController : ControllerBase
         return Ok(result);
     }
 
+    [AllowAnonymous]
     [HttpGet("{id}")]
     public async Task<IActionResult> GetLibrary([FromRoute] Guid id)
     {
@@ -217,13 +219,17 @@ public class LibraryController : ControllerBase
             return NotFound();
         }
 
-        var dto = await ToDto(result.Entity);
+        var isOwner = result.Entity.UserId == userId;
+        var withApprovedLoan = await LibrariesWithApprovedLoan(userId);
+
+        var dto = await ToDto(result.Entity, isOwner || withApprovedLoan.Contains(result.Entity.Id));
         dto.BookCount = result.BookCount;
-        dto.IsAdmin = result.Entity.UserId == userId;
+        dto.IsAdmin = isOwner;
 
         return Ok(dto);
     }
 
+    [AllowAnonymous]
     [HttpGet("{libraryId}/books")]
     public async Task<IActionResult> GetLibraryBooks([FromRoute] Guid libraryId, [FromQuery] GetBooksQueryDto query)
     {
@@ -298,6 +304,7 @@ public class LibraryController : ControllerBase
         return Ok(new PagedResultDto<BookDto> { Items = items, TotalCount = totalCount });
     }
 
+    [AllowAnonymous]
     [HttpGet("{libraryId}/books/{bookId}")]
     public async Task<IActionResult> GetBook([FromRoute] Guid libraryId, [FromRoute] Guid bookId)
     {
@@ -424,6 +431,7 @@ public class LibraryController : ControllerBase
     /// Restituisce le librerie entro un raggio (in metri) da un punto geografico.
     /// Usa ST_DWithin con geography per distanza sferica accurata in metri.
     /// </summary>
+    [AllowAnonymous]
     [HttpGet("search/radius")]
     public async Task<IActionResult> SearchByRadius([FromQuery] SearchByRadiusDto dto)
     {
@@ -438,13 +446,14 @@ public class LibraryController : ControllerBase
                         EF.Functions.IsWithinDistance(l.Location, center, dto.RadiusKilometers * 1000, true))
             .ToListAsync();
 
-        return Ok(_mapper.Map<List<LibraryDto>>(libraries));
+        return Ok(await ToSearchResults(libraries));
     }
 
     /// <summary>
     /// Restituisce le librerie che si trovano all'interno di un poligono disegnato sulla mappa.
     /// Le coordinate devono essere in ordine (senso orario o antiorario); il poligono viene chiuso automaticamente.
     /// </summary>
+    [AllowAnonymous]
     [HttpPost("search/polygon")]
     public async Task<IActionResult> SearchByPolygon([FromBody] SearchByPolygonDto dto)
     {
@@ -465,16 +474,70 @@ public class LibraryController : ControllerBase
             .Where(l => !l.IsHidden && l.Location != null && polygon.Contains(l.Location))
             .ToListAsync();
 
-        return Ok(_mapper.Map<List<LibraryDto>>(libraries));
+        return Ok(await ToSearchResults(libraries));
+    }
+
+    /// <summary>
+    /// Mappa le librerie trovate da una ricerca, ognuna con il dettaglio di posizione
+    /// a cui il chiamante ha diritto.
+    /// </summary>
+    private async Task<List<LibraryDto>> ToSearchResults(List<LibraryEntity> libraries)
+    {
+        _contextAccessor.TryGetUserId(out var userId);
+        var withApprovedLoan = await LibrariesWithApprovedLoan(userId);
+
+        var result = new List<LibraryDto>();
+        foreach (var library in libraries)
+        {
+            var isOwner = library.UserId == userId;
+            var dto = await ToDto(library, isOwner || withApprovedLoan.Contains(library.Id));
+            dto.IsAdmin = isOwner;
+            result.Add(dto);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Librerie da cui l'utente ha un prestito approvato in corso: sono quelle di cui
+    /// può vedere l'indirizzo, perché deve andarci a ritirare il libro.
+    /// </summary>
+    private async Task<HashSet<Guid>> LibrariesWithApprovedLoan(Guid userId)
+    {
+        if (userId == Guid.Empty)
+        {
+            return [];
+        }
+
+        var libraryIds = await _db.LoanRequests
+            .Where(x => x.UserId == userId && x.Status == LoanRequestStatus.Approved)
+            .Join(_db.Books, loan => loan.BookId, book => book.Id, (loan, book) => book.LibraryId)
+            .Distinct()
+            .ToListAsync();
+
+        return [.. libraryIds];
     }
 
     /// <summary>
     /// Mappa la libreria aggiungendo le URL dell'immagine, che sono firmate e scadono
     /// dopo un'ora: vanno quindi rigenerate a ogni risposta.
+    /// Con exactLocation a false l'indirizzo viene omesso e le coordinate arrotondate.
     /// </summary>
-    private async Task<LibraryDto> ToDto(LibraryEntity library)
+    private async Task<LibraryDto> ToDto(LibraryEntity library, bool exactLocation)
     {
         var dto = _mapper.Map<LibraryDto>(library);
+
+        if (!exactLocation)
+        {
+            dto.Address = null;
+            dto.PostalCode = null;
+            // Si arrotonda invece di spostare il punto: i decimali successivi
+            // spariscono dalla risposta e non c'è nessuno scostamento da sottrarre
+            // per chi conoscesse l'algoritmo. Due decimali valgono circa un chilometro.
+            dto.Latitude = Math.Round(dto.Latitude, 2);
+            dto.Longitude = Math.Round(dto.Longitude, 2);
+            dto.IsApproximateLocation = true;
+        }
 
         if (!string.IsNullOrEmpty(library.ImageKey))
         {
