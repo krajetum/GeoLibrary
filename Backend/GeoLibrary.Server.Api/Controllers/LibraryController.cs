@@ -252,6 +252,42 @@ public class LibraryController : ControllerBase
         return Ok(dto);
     }
 
+    [HttpGet("{libraryId}/stats")]
+    public async Task<IActionResult> GetLibraryStats([FromRoute] Guid libraryId, [FromQuery] DateTime from, [FromQuery] DateTime to)
+    {
+        if (!_contextAccessor.TryGetUserId(out var userId))
+        {
+            return Unauthorized();
+        }
+        var library = await _db.Libraries.AsNoTracking().FirstOrDefaultAsync(x => x.Id == libraryId);
+        if (library is null)
+        {
+            return NotFound();
+        }
+        // Solo il proprietario della libreria può vedere le statistiche.
+        if (library.UserId != userId)
+        {
+            return Forbid();
+        }
+        var cleanedFrom = from.Date;
+        var cleanedTo = to.Date;
+        var stats = await _db.LibraryDailyViews
+            .AsNoTracking()
+            .Where(x => x.LibraryId == libraryId && x.Date >= cleanedFrom && x.Date <= cleanedTo)
+            .OrderBy(x => x.Date)
+            .Select(x => new DateStats
+            {
+                Date = DateOnly.FromDateTime(x.Date),
+                ViewsCount = x.ViewsCount
+            })
+            .ToListAsync();
+
+        var completeStats = FillStats(cleanedFrom, cleanedTo, stats);
+
+        return Ok(completeStats);
+
+    }
+
     [AllowAnonymous]
     [HttpGet("{libraryId}/books")]
     public async Task<IActionResult> GetLibraryBooks([FromRoute] Guid libraryId, [FromQuery] GetBooksQueryDto query)
@@ -370,6 +406,63 @@ public class LibraryController : ControllerBase
         }
 
         return Ok(dto);
+    }
+
+    [HttpGet("{libraryId}/books/{bookId}/stats")]
+    public async Task<IActionResult> GetBookStats([FromRoute] Guid libraryId, [FromRoute] Guid bookId, [FromQuery] DateTime from, [FromQuery] DateTime to)
+    {
+        if (!_contextAccessor.TryGetUserId(out var userId))
+        {
+            return Unauthorized();
+        }
+        var book = await _db.Books.AsNoTracking()
+            .Include(x => x.Library)
+            .FirstOrDefaultAsync(x => x.LibraryId == libraryId && x.Id == bookId);
+
+        if (book is null)
+        {
+            return NotFound();
+        }
+        // Solo il proprietario della libreria può vedere le statistiche.
+        if (book.Library.UserId != userId)
+        {
+            return Forbid();
+        }
+
+        var cleanedFrom = from.Date;
+        var cleanedTo = to.Date;
+
+        var stats = await _db.BookDailyViews
+            .AsNoTracking()
+            .Where(x => x.LibraryId == libraryId && x.BookId == bookId && x.Date >= cleanedFrom && x.Date <= cleanedTo)
+            .OrderBy(x => x.Date)
+            .Select(x => new DateStats
+            {
+                Date = DateOnly.FromDateTime(x.Date),
+                ViewsCount = x.ViewsCount
+            })
+            .ToListAsync();
+
+        // Se ci sono buchi di date dove non ci sono state delle visite, li riempiamo con ViewsCount = 0.
+        var completeStats = FillStats(cleanedFrom, cleanedTo, stats);
+
+        return Ok(completeStats);
+    }
+
+    private static List<DateStats> FillStats(DateTime cleanedFrom, DateTime cleanedTo, List<DateStats> stats)
+    {
+        var allDatesInRange = Enumerable.Range(0, (cleanedTo - cleanedFrom).Days + 1)
+                              .Select(offset => cleanedFrom.AddDays(offset))
+                              .ToList();
+
+        var statsDict = stats.ToDictionary(s => s.Date, s => s.ViewsCount);
+
+        var completeStats = allDatesInRange.Select(date => new DateStats
+        {
+            Date = DateOnly.FromDateTime(date),
+            ViewsCount = statsDict.TryGetValue(DateOnly.FromDateTime(date), out var count) ? count : 0
+        }).ToList();
+        return completeStats;
     }
 
     [HttpPost("{libraryId}/books/import")]
