@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GeoLibrary.Server.Abstractions\GeoLibrary.Server.Abstractions.csproj" />
+    <ProjectReference Include="..\GeoLibrary.Server.Database\GeoLibrary.Server.Database.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,4 @@
-﻿using GeoLibrary.Server.Abstractions;
+﻿using GeoLibrary.Server.Abstractions.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 

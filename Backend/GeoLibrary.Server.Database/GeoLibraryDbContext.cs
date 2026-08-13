@@ -9,6 +9,8 @@ public class GeoLibraryDbContext(DbContextOptions<GeoLibraryDbContext> options) 
     public DbSet<LibraryEntity> Libraries { get; set; }
     public DbSet<BookEntity> Books { get; set; }
     public DbSet<LoanRequestEntity> LoanRequests { get; set; }
+    public DbSet<BookDailyViewEntity> BookDailyViews { get; set; }
+    public DbSet<LibraryDailyViewEntity> LibraryDailyViews { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

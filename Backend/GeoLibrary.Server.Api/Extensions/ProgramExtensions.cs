@@ -1,4 +1,5 @@
-﻿using GeoLibrary.Server.Abstractions;
+﻿using GeoLibrary.Server.Abstractions.Models;
+using GeoLibrary.Server.Abstractions.Services;
 using GeoLibrary.Server.Services;
 using Minio;
 
@@ -79,6 +80,14 @@ public static class ProgramExtensions
         });
 
 
+        return builder;
+    }
+
+
+    public static WebApplicationBuilder AddTrackingServices(this WebApplicationBuilder builder)
+    {
+        builder.Services.AddScoped<ITrackingService<BookTrackingRequest>, BookViewTrackingService>();
+        builder.Services.AddScoped<ITrackingService<LibraryTrackingRequest>, LibraryViewTrackingService>();
         return builder;
     }
 }

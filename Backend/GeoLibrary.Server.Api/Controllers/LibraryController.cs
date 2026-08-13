@@ -1,11 +1,12 @@
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
-using GeoLibrary.Server.Abstractions;
 using GeoLibrary.Server.Abstractions.Dtos;
 using GeoLibrary.Server.Abstractions.Dtos.Book;
 using GeoLibrary.Server.Abstractions.Dtos.Library;
 using GeoLibrary.Server.Abstractions.Entities;
 using GeoLibrary.Server.Abstractions.Extensions;
+using GeoLibrary.Server.Abstractions.Models;
+using GeoLibrary.Server.Abstractions.Services;
 using GeoLibrary.Server.Abstractions.Validators;
 using GeoLibrary.Server.Database;
 using GeoLibrary.Server.Services;
@@ -27,12 +28,23 @@ public class LibraryController : ControllerBase
     private readonly IStorageService _storageService;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IHttpContextAccessor _contextAccessor;
+    private readonly ITrackingService<BookTrackingRequest> _bookTrackingService;
+    private readonly ITrackingService<LibraryTrackingRequest> _libraryTrackingService;
     private readonly ILogger<LibraryController> _logger;
 
     private static readonly GeometryFactory _geometryFactory =
         NetTopologySuite.NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
 
-    public LibraryController(GeoLibraryDbContext db, IMapper mapper, ISBNService isbnService, IStorageService storageService, IHttpClientFactory httpClientFactory, IHttpContextAccessor httpContextAccessor, ILogger<LibraryController> logger)
+    public LibraryController(
+        GeoLibraryDbContext db, 
+        IMapper mapper, 
+        ISBNService isbnService, 
+        IStorageService storageService, 
+        IHttpClientFactory httpClientFactory, 
+        IHttpContextAccessor httpContextAccessor, 
+        ITrackingService<BookTrackingRequest> bookTrackingService,
+        ITrackingService<LibraryTrackingRequest> libraryTrackingService,
+        ILogger<LibraryController> logger)
     {
         _db = db;
         _mapper = mapper;
@@ -40,6 +52,8 @@ public class LibraryController : ControllerBase
         _storageService = storageService;
         _httpClientFactory = httpClientFactory;
         _contextAccessor = httpContextAccessor;
+        _bookTrackingService = bookTrackingService;
+        _libraryTrackingService = libraryTrackingService;
         _logger = logger;
     }
 
@@ -226,6 +240,15 @@ public class LibraryController : ControllerBase
         dto.BookCount = result.BookCount;
         dto.IsAdmin = isOwner;
 
+        if (_contextAccessor.TryGetUserSignature(out string userSignature))
+        {
+            await _libraryTrackingService.TrackAsync(new LibraryTrackingRequest()
+            {
+                LibraryId = id,
+                UserSignature = userSignature,
+            });
+        }
+
         return Ok(dto);
     }
 
@@ -334,6 +357,16 @@ public class LibraryController : ControllerBase
         {
             dto.CoverImageUrl = await _storageService.GetUrl(book.CoverImageKey);
             dto.CoverThumbnailUrl = await _storageService.GetThumbnailUrl(book.CoverImageKey);
+        }
+
+        if (_contextAccessor.TryGetUserSignature(out string userSignature))
+        {
+            await _bookTrackingService.TrackAsync(new BookTrackingRequest()
+            {
+                LibraryId = libraryId,
+                BookId = bookId,
+                UserSignature = userSignature,
+            });
         }
 
         return Ok(dto);

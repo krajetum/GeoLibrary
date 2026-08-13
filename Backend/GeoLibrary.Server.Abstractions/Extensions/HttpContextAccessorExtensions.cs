@@ -38,5 +38,24 @@ public static class HttpContextAccessorExtensions
         return !string.IsNullOrEmpty(email);
     }
 
+    public static bool TryGetUserSignature(this IHttpContextAccessor httpContextAccessor, out string userSignature)
+    {
+        if(httpContextAccessor.HttpContext?.Request.Headers.TryGetValue("X-User-Signature", out var signatureValue) == true)
+        {
+
+            if (signatureValue.Count == 0)
+            {
+                userSignature = string.Empty;
+                return false;
+            }
+            userSignature = signatureValue[0] ?? string.Empty;
+            return string.IsNullOrWhiteSpace(userSignature) == false;
+        }
+        else
+        {
+            userSignature = string.Empty;
+            return false;
+        }
+    }
 
 }

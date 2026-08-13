@@ -1,5 +1,5 @@
-﻿using GeoLibrary.Server.Abstractions;
-using GeoLibrary.Server.Abstractions.Models;
+﻿using GeoLibrary.Server.Abstractions.Models;
+using GeoLibrary.Server.Abstractions.Services;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;

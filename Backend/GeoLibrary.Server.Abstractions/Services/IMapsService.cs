@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace GeoLibrary.Server.Abstractions;
+namespace GeoLibrary.Server.Abstractions.Services;
 
 public interface IMapsService
 {

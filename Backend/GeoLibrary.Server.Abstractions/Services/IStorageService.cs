@@ -1,4 +1,4 @@
-namespace GeoLibrary.Server.Abstractions;
+namespace GeoLibrary.Server.Abstractions.Services;
 
 public interface IStorageService
 {

@@ -1,4 +1,4 @@
-using GeoLibrary.Server.Abstractions;
+using GeoLibrary.Server.Abstractions.Services;
 using Minio;
 using Minio.DataModel.Args;
 using SkiaSharp;
