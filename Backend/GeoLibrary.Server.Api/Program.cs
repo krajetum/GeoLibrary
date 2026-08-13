@@ -22,14 +22,14 @@ builder.Services.AddOpenApi();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddStorage(builder.Configuration);
 builder.AddHttpClients();
-
+builder.AddTrackingServices();
 // Aspire inietta la connection string con chiave "database" (da AppHost: postgres.AddDatabase("database")).
 // GetConnectionString("database") la legge dalla configurazione standard .NET.
 builder.Services.AddDbContext<GeoLibraryDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("database"),
-        o => o.UseNetTopologySuite()
-    ));
+        o => o.UseNetTopologySuite()    ));
+
 
 builder.Services.AddAutoMapper(config => { }, typeof(UserProfile).Assembly);
 

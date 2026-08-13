@@ -21,7 +21,7 @@ public class BookViewTrackingService(IDistributedCache redis, GeoLibraryDbContex
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var cacheKey = $"view:book:{request.LibraryId}:{request.BookId}:{today:yyyyMMdd}:{request.UserSignature}";
 
-        if (redis.GetStringAsync(cacheKey) != null)
+        if (await redis.GetStringAsync(cacheKey) != null)
         {
             return false;
         }
@@ -58,7 +58,7 @@ public class BookViewTrackingService(IDistributedCache redis, GeoLibraryDbContex
             Date = today.ToDateTime(new TimeOnly(0, 0, 0)),
             ViewsCount = 1,
         });
-
+        await db.SaveChangesAsync();
         return true;
     }
 }
