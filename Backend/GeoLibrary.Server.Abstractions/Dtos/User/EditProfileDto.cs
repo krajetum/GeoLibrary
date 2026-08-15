@@ -4,9 +4,7 @@ using System.Text;
 
 namespace GeoLibrary.Server.Abstractions.Dtos.User;
 
-public class ProfileDto
+public class EditProfileDto
 {
     public required string DisplayName { get; set; }
-    public required string Email { get; set; }
-    public string? AvatarUrl { get; set; }
 }

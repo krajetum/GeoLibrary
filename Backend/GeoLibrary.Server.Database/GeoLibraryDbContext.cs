@@ -42,7 +42,7 @@ public class GeoLibraryDbContext(DbContextOptions<GeoLibraryDbContext> options) 
 
         modelBuilder.Entity<BookDailyViewEntity>(entity =>
         {
-            entity.HasKey(bdv => new { bdv.BookId, bdv.Date });
+            entity.HasKey(bdv => new { bdv.BookId, bdv.LibraryId, bdv.Date });
 
             entity.HasOne(bdv => bdv.Book)
                   .WithMany(b => b.DailyViews)

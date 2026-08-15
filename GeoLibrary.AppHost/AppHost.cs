@@ -5,7 +5,7 @@ var keycloak = builder.AddKeycloak("keycloak", 8080)
                       .WithRealmImport("../Keycloak/realms");
 
 
-var cache = builder.AddRedis("cache");
+var cache = builder.AddRedis("cache").WithRedisInsight();
 
 var postgres = builder.AddPostgres("postgres")
     .WithImage("postgis/postgis")

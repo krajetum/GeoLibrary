@@ -19,19 +19,25 @@ public class LibraryViewTrackingService(IDistributedCache redis, GeoLibraryDbCon
     public async Task<bool> TrackAsync(LibraryTrackingRequest request)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var cacheKey = $"view:book:{request.LibraryId}:{today:yyyyMMdd}:{request.UserSignature}";
+        var cacheKey = $"view:library:{request.LibraryId}:{today:yyyyMMdd}:{request.UserSignature}";
 
         if (await redis.GetStringAsync(cacheKey) != null)
         {
             return false;
         }
 
+        if (!await UpdateViewCount(request.LibraryId, today))
+        {
+            return false;
+        }
+
+        
+
         await redis.SetStringAsync(cacheKey, "1", new DistributedCacheEntryOptions()
         {
-            AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)
+            AbsoluteExpiration = GetExpiration()
         });
-
-        return await UpdateViewCount(request.LibraryId, today);
+        return true;
     }
 
     /// <summary>
@@ -43,7 +49,10 @@ public class LibraryViewTrackingService(IDistributedCache redis, GeoLibraryDbCon
     /// <returns></returns>
     private async Task<bool> UpdateViewCount( Guid libraryId, DateOnly today)
     {
-        if (await db.LibraryDailyViews.FindAsync(libraryId, today.ToDateTime(new TimeOnly(0, 0, 0))) is LibraryDailyViewEntity existing)
+        // Creare DateTime con Kind=Utc per compatibilità con PostgreSQL timestamptz
+        var utcMidnight = today.ToDateTime(new TimeOnly(0, 0, 0), DateTimeKind.Utc);
+
+        if (await db.LibraryDailyViews.FindAsync(libraryId, utcMidnight) is LibraryDailyViewEntity existing)
         {
             existing.ViewsCount++;
             await db.SaveChangesAsync();
@@ -54,11 +63,20 @@ public class LibraryViewTrackingService(IDistributedCache redis, GeoLibraryDbCon
         await db.LibraryDailyViews.AddAsync(new LibraryDailyViewEntity
         {
             LibraryId = libraryId,
-            Date = today.ToDateTime(new TimeOnly(0, 0, 0)),
+            Date = utcMidnight,
             ViewsCount = 1,
         });
         await db.SaveChangesAsync();
         return true;
+    }
+
+    /// <summary>
+    /// Restituisce la data di scadenza della cache per le visualizzazioni giornaliere. 
+    /// L'expiration è sempre a fine giornata UTC, così da coincidere con il bucket giornaliero della tabella delle statistiche.
+    /// <returns></returns>
+    public DateTime GetExpiration()
+    {
+        return DateTime.UtcNow.Date.AddDays(1);
     }
 
 }

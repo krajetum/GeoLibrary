@@ -10,7 +10,7 @@ public interface IStorageService
     /// <summary>
     /// Carica un'immagine insieme alla sua miniatura. Restituisce la chiave dell'originale.
     /// </summary>
-    Task<string> UploadImage(Stream content, string fileName, string contentType);
+    Task<string> UploadImageAsync(Stream content, string fileName, string contentType);
 
     /// <summary>
     /// URL temporaneo per scaricare il file.
@@ -21,4 +21,7 @@ public interface IStorageService
     /// URL temporaneo della miniatura generata da UploadImage.
     /// </summary>
     Task<string> GetThumbnailUrl(string key);
+
+    Task<bool> DeleteAsync(string key);
+    Task<bool> DeleteManyAsync(IEnumerable<string> keys);
 }

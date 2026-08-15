@@ -116,7 +116,7 @@ public class BookController : ControllerBase
             return Forbid();
         }
         using var stream = file.OpenReadStream();
-        var key = await _storageService.UploadImage(stream, file.FileName, file.ContentType);
+        var key = await _storageService.UploadImageAsync(stream, file.FileName, file.ContentType);
         book.CoverImageKey = key;
         await _db.SaveChangesAsync();
         return Ok(new

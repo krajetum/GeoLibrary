@@ -9,6 +9,12 @@ async function apiFetch(path: string, options: RequestInit = {}) {
     await keycloak.updateToken(30)
   }
 
+  var signature = localStorage.getItem('x-signature')
+  if (!signature) {
+    signature = crypto.randomUUID()
+    localStorage.setItem('x-signature', signature)
+  }
+
   // Con FormData il boundary multipart va generato dal browser: niente Content-Type esplicito.
   const isFormData = options.body instanceof FormData
 
@@ -18,6 +24,7 @@ async function apiFetch(path: string, options: RequestInit = {}) {
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(keycloak.authenticated ? { Authorization: `Bearer ${keycloak.token}` } : {}),
       ...options.headers,
+      'X-User-Signature': signature
     },
   })
 }

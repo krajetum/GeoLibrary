@@ -25,13 +25,16 @@ public class BookViewTrackingService(IDistributedCache redis, GeoLibraryDbContex
         {
             return false;
         }
-
+        if(!await UpdateViewCount(request.LibraryId, request.BookId, today))
+        {
+            return false;
+        }
         await redis.SetStringAsync(cacheKey, "1", new DistributedCacheEntryOptions()
         {
-            AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)
+            AbsoluteExpiration = GetExpiration()
         });
 
-        return await UpdateViewCount(request.LibraryId, request.BookId, today);
+        return true;
     }
 
     /// <summary>
@@ -43,7 +46,10 @@ public class BookViewTrackingService(IDistributedCache redis, GeoLibraryDbContex
     /// <returns></returns>
     private async Task<bool> UpdateViewCount(Guid libraryId, Guid bookId, DateOnly today)
     {
-        if (await db.BookDailyViews.FindAsync(libraryId, bookId, today.ToDateTime(new TimeOnly(0, 0, 0))) is BookDailyViewEntity existing)
+        var utcMidnight = today.ToDateTime(new TimeOnly(0, 0, 0), DateTimeKind.Utc);
+
+
+        if (await db.BookDailyViews.FindAsync(libraryId, bookId, utcMidnight) is BookDailyViewEntity existing)
         {
             existing.ViewsCount++;
             await db.SaveChangesAsync();
@@ -55,10 +61,19 @@ public class BookViewTrackingService(IDistributedCache redis, GeoLibraryDbContex
         {
             LibraryId = libraryId,
             BookId = bookId,
-            Date = today.ToDateTime(new TimeOnly(0, 0, 0)),
+            Date = utcMidnight,
             ViewsCount = 1,
         });
         await db.SaveChangesAsync();
         return true;
+    }
+
+    /// <summary>
+    /// Restituisce la data di scadenza della cache per le visualizzazioni giornaliere. 
+    /// L'expiration è sempre a fine giornata UTC, così da coincidere con il bucket giornaliero della tabella delle statistiche.
+    /// <returns></returns>
+    public DateTime GetExpiration()
+    {
+        return DateTime.UtcNow.Date.AddDays(1);
     }
 }

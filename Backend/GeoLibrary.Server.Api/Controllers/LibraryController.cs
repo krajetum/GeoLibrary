@@ -171,7 +171,7 @@ public class LibraryController : ControllerBase
         }
 
         using var stream = file.OpenReadStream();
-        var key = await _storageService.UploadImage(stream, file.FileName, file.ContentType);
+        var key = await _storageService.UploadImageAsync(stream, file.FileName, file.ContentType);
         library.ImageKey = key;
         await _db.SaveChangesAsync();
 
@@ -240,7 +240,7 @@ public class LibraryController : ControllerBase
         dto.BookCount = result.BookCount;
         dto.IsAdmin = isOwner;
 
-        if (_contextAccessor.TryGetUserSignature(out string userSignature))
+        if (!isOwner && _contextAccessor.TryGetUserSignature(out string userSignature))
         {
             await _libraryTrackingService.TrackAsync(new LibraryTrackingRequest()
             {
@@ -271,6 +271,19 @@ public class LibraryController : ControllerBase
         }
         var cleanedFrom = from.Date;
         var cleanedTo = to.Date;
+
+        if (cleanedFrom > cleanedTo)
+        {
+            return BadRequest("La data di inizio non può essere successiva a quella di fine.");
+        }
+
+        // range troppo grande 
+        if ((cleanedTo - cleanedFrom).TotalDays > 365)
+        {
+            return BadRequest("Il range di date non può superare un anno.");
+        }
+
+
         var stats = await _db.LibraryDailyViews
             .AsNoTracking()
             .Where(x => x.LibraryId == libraryId && x.Date >= cleanedFrom && x.Date <= cleanedTo)
@@ -395,7 +408,7 @@ public class LibraryController : ControllerBase
             dto.CoverThumbnailUrl = await _storageService.GetThumbnailUrl(book.CoverImageKey);
         }
 
-        if (_contextAccessor.TryGetUserSignature(out string userSignature))
+        if (!isOwner && _contextAccessor.TryGetUserSignature(out string userSignature))
         {
             await _bookTrackingService.TrackAsync(new BookTrackingRequest()
             {
@@ -431,6 +444,18 @@ public class LibraryController : ControllerBase
 
         var cleanedFrom = from.Date;
         var cleanedTo = to.Date;
+
+
+        if (cleanedFrom > cleanedTo)
+        {
+            return BadRequest("La data di inizio non può essere successiva a quella di fine.");
+        }
+
+        // range troppo grande 
+        if ((cleanedTo - cleanedFrom).TotalDays > 365)
+        {
+            return BadRequest("Il range di date non può superare un anno.");
+        }
 
         var stats = await _db.BookDailyViews
             .AsNoTracking()
@@ -550,7 +575,7 @@ public class LibraryController : ControllerBase
         await response.Content.CopyToAsync(image);
         image.Position = 0;
 
-        return await _storageService.UploadImage(image, $"{isbn}.jpg", "image/jpeg");
+        return await _storageService.UploadImageAsync(image, $"{isbn}.jpg", "image/jpeg");
     }
 
     /// <summary>

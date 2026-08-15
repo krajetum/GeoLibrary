@@ -1,11 +1,12 @@
 using GeoLibrary.Server.Abstractions.Services;
+using Microsoft.Extensions.Logging;
 using Minio;
 using Minio.DataModel.Args;
 using SkiaSharp;
 
 namespace GeoLibrary.Server.Services;
 
-public class MinioStorageService(IMinioClient client) : IStorageService
+public class MinioStorageService(IMinioClient client, ILogger<MinioStorageService> logger) : IStorageService
 {
     private const string BucketName = "geolibrary";
     private const int ThumbnailSize = 400;
@@ -19,7 +20,7 @@ public class MinioStorageService(IMinioClient client) : IStorageService
         return key;
     }
 
-    public async Task<string> UploadImage(Stream content, string fileName, string contentType)
+    public async Task<string> UploadImageAsync(Stream content, string fileName, string contentType)
     {
         var key = await Upload(content, fileName, contentType);
 
@@ -92,5 +93,35 @@ public class MinioStorageService(IMinioClient client) : IStorageService
         {
             await client.MakeBucketAsync(new MakeBucketArgs().WithBucket(BucketName));
         }
+    }
+
+    public Task<bool> DeleteAsync(string key)
+    {
+        return client.RemoveObjectAsync(new RemoveObjectArgs()
+            .WithBucket(BucketName)
+            .WithObject(key))
+            .ContinueWith(t =>
+            {
+                if (t.IsFaulted)
+                {
+                    logger.LogError(t.Exception, "Error occurred while deleting object from storage.");
+                    return false;
+                }
+                return true;
+            });
+    }
+
+    public Task<bool> DeleteManyAsync(IEnumerable<string> keys)
+    {
+        var tasks = keys.Select(DeleteAsync);
+        return Task.WhenAll(tasks).ContinueWith(t =>
+        {
+            if (t.IsFaulted)
+            {
+                logger.LogError(t.Exception, "Error occurred while deleting multiple objects from storage.");
+                return false;
+            }
+            return t.Result.All(result => result);
+        });
     }
 }

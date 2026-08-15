@@ -9,7 +9,7 @@ public class UserEntity
     public required Guid Id { get; set; } // keycloak user id
     public required string DisplayName { get; set; }
     public required string Email { get; set; }
-    public string? AvatarUrl { get; set; } // TODO: using minio to store user avatar images
+    public string? AvatarUrl { get; set; }
 
     public ICollection<LibraryEntity> Libraries { get; set; } = [];
     public ICollection<LoanRequestEntity> Loans { get; set; } = [];
