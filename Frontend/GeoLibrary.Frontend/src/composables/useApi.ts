@@ -24,7 +24,7 @@ async function apiFetch(path: string, options: RequestInit = {}) {
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(keycloak.authenticated ? { Authorization: `Bearer ${keycloak.token}` } : {}),
       ...options.headers,
-      'X-User-Signature': signature
+      'X-User-Signature': signature,
     },
   })
 }

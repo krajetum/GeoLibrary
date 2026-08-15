@@ -2,6 +2,7 @@
 using GeoLibrary.Server.Abstractions.Models;
 using GeoLibrary.Server.Abstractions.Services;
 using GeoLibrary.Server.Database;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using System;
 using System.Collections.Generic;
@@ -49,7 +50,12 @@ public class BookViewTrackingService(IDistributedCache redis, GeoLibraryDbContex
         var utcMidnight = today.ToDateTime(new TimeOnly(0, 0, 0), DateTimeKind.Utc);
 
 
-        if (await db.BookDailyViews.FindAsync(libraryId, bookId, utcMidnight) is BookDailyViewEntity existing)
+        var existing = await db.BookDailyViews
+            .FirstOrDefaultAsync(bdv => bdv.BookId == bookId
+                                     && bdv.LibraryId == libraryId
+                                     && bdv.Date == utcMidnight);
+
+        if (existing is not null)
         {
             existing.ViewsCount++;
             await db.SaveChangesAsync();

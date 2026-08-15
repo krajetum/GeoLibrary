@@ -13,7 +13,7 @@ public class GeoLibraryDbContextFactory : IDesignTimeDbContextFactory<GeoLibrary
     {
         var options = new DbContextOptionsBuilder<GeoLibraryDbContext>()
             .UseNpgsql(
-                "Host=localhost;Port=54415;Username=postgres;Password=G.Ag-F5u.)~spw{QwXn6PZ;Database=database",
+                "Host=localhost;Port=56189;Username=postgres;Password=G.Ag-F5u.)~spw{QwXn6PZ;Database=database",
                 o => o.UseNetTopologySuite())
             .Options;
 

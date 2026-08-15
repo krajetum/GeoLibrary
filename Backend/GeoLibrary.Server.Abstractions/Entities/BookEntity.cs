@@ -18,6 +18,8 @@ public class BookEntity
 
     public string CoverImageKey { get; set; } = string.Empty;
 
+    public DateTime? PublishedAt { get; set; }
+
     /// <summary>
     /// Se true il libro è visibile solo al proprietario della libreria.
     /// </summary>
@@ -27,4 +29,5 @@ public class BookEntity
     // Navigation property for loaning
     public ICollection<LoanRequestEntity> Bookings { get; set; } = [];
     public ICollection<BookDailyViewEntity> DailyViews { get; set; } = [];
+    public ICollection<CategoryEntity> Categories { get; set; } = [];
 }

@@ -3,6 +3,7 @@ using System;
 using GeoLibrary.Server.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GeoLibrary.Server.Database.Migrations
 {
     [DbContext(typeof(GeoLibraryDbContext))]
-    partial class GeoLibraryDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260815161813_BookCategories")]
+    partial class BookCategories
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -57,7 +60,7 @@ namespace GeoLibrary.Server.Database.Migrations
 
                     b.HasIndex("LibraryId");
 
-                    b.ToTable("BookDailyViews", (string)null);
+                    b.ToTable("BookDailyViews");
                 });
 
             modelBuilder.Entity("GeoLibrary.Server.Abstractions.Entities.BookEntity", b =>
@@ -105,7 +108,7 @@ namespace GeoLibrary.Server.Database.Migrations
 
                     b.HasIndex("LibraryId");
 
-                    b.ToTable("Books", (string)null);
+                    b.ToTable("Books");
                 });
 
             modelBuilder.Entity("GeoLibrary.Server.Abstractions.Entities.CategoryEntity", b =>
@@ -229,7 +232,7 @@ namespace GeoLibrary.Server.Database.Migrations
 
                     b.HasKey("LibraryId", "Date");
 
-                    b.ToTable("LibraryDailyViews", (string)null);
+                    b.ToTable("LibraryDailyViews");
                 });
 
             modelBuilder.Entity("GeoLibrary.Server.Abstractions.Entities.LibraryEntity", b =>
@@ -290,7 +293,7 @@ namespace GeoLibrary.Server.Database.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Libraries", (string)null);
+                    b.ToTable("Libraries");
                 });
 
             modelBuilder.Entity("GeoLibrary.Server.Abstractions.Entities.LoanRequestEntity", b =>
@@ -320,7 +323,7 @@ namespace GeoLibrary.Server.Database.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("LoanRequests", (string)null);
+                    b.ToTable("LoanRequests");
                 });
 
             modelBuilder.Entity("GeoLibrary.Server.Abstractions.Entities.UserEntity", b =>
@@ -342,7 +345,7 @@ namespace GeoLibrary.Server.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("GeoLibrary.Server.Abstractions.Entities.BookCategoryEntity", b =>

@@ -385,6 +385,7 @@ public class LibraryController : ControllerBase
 
         var book = await _db.Books.AsNoTracking()
             .Include(x => x.Library)
+            .Include(x => x.Categories)
             .FirstOrDefaultAsync(x => x.LibraryId == libraryId && x.Id == bookId);
 
         if (book is null)
@@ -522,6 +523,9 @@ public class LibraryController : ControllerBase
         var imported = 0;
         var skipped = 0;
 
+        // Le categorie sono poche e fisse: si leggono una volta sola e si abbinano in memoria.
+        var allCategories = await _db.Categories.ToListAsync();
+
         foreach (var line in content.Split('\n'))
         {
             var isbn = line.Trim();
@@ -544,8 +548,17 @@ public class LibraryController : ControllerBase
                 ISBN = isbn,
                 LibraryId = libraryId,
                 TotalCopies = 1,
+                PublishedAt = bookDetails.PublishedDate,
                 CoverImageKey = await DownloadCover(bookDetails.CoverUrl, isbn)
             };
+
+            // I "subjects" di OpenLibrary sono testo libero ("Fiction, fantasy, epic"): oltre allo
+            // slug intero si guardano anche le singole parole, altrimenti non aggancia quasi nulla.
+            var slugs = bookDetails.Categories
+                .SelectMany(x => x.Slug.Split('-', StringSplitOptions.RemoveEmptyEntries).Append(x.Slug))
+                .ToHashSet();
+
+            bookEntity.Categories = allCategories.Where(c => slugs.Contains(c.Slug)).ToList();
 
             await _db.Books.AddAsync(bookEntity);
             imported++;

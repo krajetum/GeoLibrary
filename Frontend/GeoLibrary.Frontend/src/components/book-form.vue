@@ -70,6 +70,31 @@
           aria-required="true"
         />
 
+        <v-select
+          v-model="form.categories"
+          :items="categories"
+          item-title="name"
+          item-value="id"
+          label="Categorie"
+          hint="Al massimo cinque"
+          persistent-hint
+          :rules="[rules.maxCategories]"
+          variant="outlined"
+          multiple
+          chips
+          closable-chips
+          class="mb-4"
+        />
+
+        <v-text-field
+          v-model="form.publishedAt"
+          label="Data di pubblicazione"
+          type="date"
+          :max="today"
+          :rules="[rules.notFuture]"
+          variant="outlined"
+        />
+
         <v-checkbox
           v-model="form.isHidden"
           label="Nascondi il libro agli altri utenti"
@@ -123,7 +148,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch, useTemplateRef } from 'vue'
+import { computed, onMounted, reactive, ref, watch, useTemplateRef } from 'vue'
+import { useApi } from '@/composables/useApi'
 
 // Stesso contratto di library-form: il componente raccoglie i dati, la pagina chiama l'API.
 const props = defineProps<{
@@ -139,8 +165,13 @@ const emit = defineEmits<{
 }>()
 
 const formRef = useTemplateRef<any>('formRef')
+const api = useApi()
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
+const MAX_CATEGORIES = 5
+
+// L'input type="date" e il campo del libro usano lo stesso formato yyyy-MM-dd.
+const today = new Date().toISOString().slice(0, 10)
 
 const form = reactive({
   title: props.book?.title ?? '',
@@ -150,7 +181,20 @@ const form = reactive({
   // I libri salvati prima di questo campo hanno 0 copie: con || si riparte da 1.
   totalCopies: props.book?.totalCopies || 1,
   isHidden: props.book?.isHidden ?? false,
+  // Il libro arriva con le categorie complete, la form lavora sui soli id.
+  categories: props.book?.categories?.map((c: any) => c.id) ?? ([] as string[]),
+  publishedAt: props.book?.publishedAt?.slice(0, 10) ?? '',
   imageFile: undefined as File | undefined,
+})
+
+// Lista fissa lato server: si carica una volta all'apertura della form.
+const categories = ref<any[]>([])
+
+onMounted(async () => {
+  const response = await api.apiFetch('/categories')
+  if (response.ok) {
+    categories.value = await response.json()
+  }
 })
 
 const imageError = ref('')
@@ -162,6 +206,9 @@ const rules = {
   maxLen: (n: number) => (v: string) => !v || v.length <= n || `Massimo ${n} caratteri`,
   // v-number-input mette null se il campo viene svuotato
   minCopies: (v: number | null) => (v != null && v >= 1) || 'Almeno una copia',
+  maxCategories: (v: string[]) =>
+    v.length <= MAX_CATEGORIES || `Massimo ${MAX_CATEGORIES} categorie`,
+  notFuture: (v: string) => !v || v <= today || 'La data non può essere nel futuro',
 }
 
 watch(
@@ -201,6 +248,9 @@ async function onSubmit() {
       isbn: form.isbn,
       totalCopies: form.totalCopies,
       isHidden: form.isHidden,
+      categories: form.categories,
+      // Campo vuoto: il server si aspetta null, non stringa vuota.
+      publishedAt: form.publishedAt || null,
     },
     form.imageFile,
   )

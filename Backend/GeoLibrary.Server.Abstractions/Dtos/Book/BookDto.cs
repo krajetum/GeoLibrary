@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using GeoLibrary.Server.Abstractions.Dtos.BookCategories;
 
 namespace GeoLibrary.Server.Abstractions.Dtos.Book;
 
@@ -13,6 +11,9 @@ public class BookDto
     public string ISBN { get; set; } = string.Empty;
     public int TotalCopies { get; set; }
     public required Guid LibraryId { get; set; }
+
+    public DateTime? PublishedAt { get; set; }
+    public List<CategoriesDto> Categories { get; set; } = [];
 
     public bool IsHidden { get; set; }
 

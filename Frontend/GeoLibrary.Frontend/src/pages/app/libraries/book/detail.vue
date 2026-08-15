@@ -42,12 +42,34 @@
                 {{ book.isbn }}
               </v-chip>
               <v-chip
+                v-if="book.publishedAt"
+                size="small"
+                variant="tonal"
+                prepend-icon="mdi-calendar-outline"
+              >
+                {{ formatDate(book.publishedAt) }}
+              </v-chip>
+              <v-chip
                 v-if="book.isHidden"
                 size="small"
                 variant="tonal"
                 prepend-icon="mdi-eye-off-outline"
               >
                 Nascosto
+              </v-chip>
+            </div>
+
+            <!-- I libri inseriti prima delle categorie non ne hanno nessuna -->
+            <div v-if="book.categories?.length" class="d-flex flex-wrap ga-2 mt-2">
+              <v-chip
+                v-for="category in book.categories"
+                :key="category.id"
+                size="small"
+                variant="tonal"
+                color="secondary"
+                prepend-icon="mdi-tag-outline"
+              >
+                {{ category.name }}
               </v-chip>
             </div>
 

@@ -15,11 +15,10 @@
         </p>
 
         <!-- TODO: valutare v-file-upload (dropzone) come in book/new.vue -->
-        <v-file-input
+        <v-file-upload
           v-model="file"
           label="Seleziona file (.csv, .txt)"
           accept=".csv,.txt"
-          prepend-icon="mdi-file-upload-outline"
           variant="outlined"
           show-size
         />

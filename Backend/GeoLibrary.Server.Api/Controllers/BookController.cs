@@ -67,6 +67,10 @@ public class BookController : ControllerBase
         var entity = _mapper.Map<AddBookDto, BookEntity>(bookDto);
         entity.Library = library;
 
+        entity.Categories = await _db.Categories
+            .Where(c => bookDto.Categories.Contains(c.Id))
+            .ToListAsync();
+
         await _db.Books.AddAsync(entity);
         await _db.SaveChangesAsync();
 
@@ -143,7 +147,12 @@ public class BookController : ControllerBase
             return Unauthorized();
         }
 
-        var book = await _db.Books.Include(b => b.Library).FirstOrDefaultAsync(b => b.Id == bookId);
+        // Le categorie servono caricate: EF confronta la collezione nuova con quella attuale
+        // e scrive solo le righe di join cambiate.
+        var book = await _db.Books
+            .Include(b => b.Library)
+            .Include(b => b.Categories)
+            .FirstOrDefaultAsync(b => b.Id == bookId);
         if (book is null)
         {
             return NotFound();
@@ -161,6 +170,10 @@ public class BookController : ControllerBase
         book.ISBN = bookDto.ISBN;
         book.TotalCopies = bookDto.TotalCopies;
         book.IsHidden = bookDto.IsHidden;
+        book.PublishedAt = bookDto.PublishedAt;
+        book.Categories = await _db.Categories
+            .Where(c => bookDto.Categories.Contains(c.Id))
+            .ToListAsync();
 
         await _db.SaveChangesAsync();
 

@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using GeoLibrary.Server.Abstractions.Extensions;
+using System.Globalization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace GeoLibrary.Server.Services;
 
@@ -11,9 +10,16 @@ public class ISBNBookInfo
     public string Title { get; set; } = string.Empty;
     public string Author { get; set; } = string.Empty;
     public string Publisher { get; set; } = string.Empty;
-    public string PublishedDate { get; set; } = string.Empty;
+    public DateTime? PublishedDate { get; set; }
     public string Description { get; set; } = string.Empty;
     public string CoverUrl { get; set; } = string.Empty;
+    public List<ISBNCategory> Categories { get; set; } = [];
+}
+
+public class ISBNCategory
+{
+    public required string Name { get; set; }
+    public required string Slug { get; set; }
 }
 
 public class ISBNService(HttpClient httpClient)
@@ -69,14 +75,50 @@ public class ISBNService(HttpClient httpClient)
                 : null;
         }
 
+        var isbnCategories = new List<ISBNCategory>();
+        if (book.TryGetProperty("subjects", out var subjects) && subjects.ValueKind == JsonValueKind.Array)
+        {
+            var categories = subjects.EnumerateArray()
+                .Select(x => x.TryGetProperty("name", out var name) ? name.GetString() : null)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .ToList();
+
+            isbnCategories = [.. categories.Select(c => new ISBNCategory
+            {
+                Name = c!,
+                Slug = c!.ToSlug()
+            })];
+
+        }
+
         return new ISBNBookInfo
         {
             Title = title ?? string.Empty,
             Author = author ?? string.Empty,
             Publisher = publisher ?? string.Empty,
-            PublishedDate = publishedDate ?? string.Empty,
+            PublishedDate = ParsePublishedDate(publishedDate),
             Description = description ?? string.Empty,
-            CoverUrl = coverUrl ?? string.Empty
+            CoverUrl = coverUrl ?? string.Empty,
+            Categories = isbnCategories
         };
+    }
+
+    /// <summary>
+    /// OpenLibrary non ha un formato fisso per publish_date: "1998", "March 1998", "c1975", "1998-03-01".
+    /// Si prova la data completa, poi si ripiega sul primo anno a quattro cifre; se non si capisce, null.
+    /// </summary>
+    private static DateTime? ParsePublishedDate(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        if (DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
+            return parsed.Date;
+
+        var year = Regex.Match(value, @"\d{4}");
+        if (year.Success && int.TryParse(year.Value, out var yearValue) && yearValue is >= 1 and <= 9999)
+            return new DateTime(yearValue, 1, 1);
+
+        return null;
     }
 }

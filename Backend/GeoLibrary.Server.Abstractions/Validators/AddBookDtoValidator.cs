@@ -11,5 +11,10 @@ public class AddBookDtoValidator : AbstractValidator<AddBookDto>
         RuleFor(x => x.Title).NotEmpty().WithMessage("Title is required.");
         RuleFor(x => x.Author).NotEmpty().WithMessage("Author is required.");
         RuleFor(x => x.TotalCopies).GreaterThanOrEqualTo(1).WithMessage("Total copies must be at least 1.");
+        RuleFor(x => x.Categories).Must(c => c.Count <= 5).WithMessage("At most 5 categories are allowed.");
+        RuleFor(x => x.PublishedAt)
+            .Must(d => d!.Value.Date <= DateTime.UtcNow.Date)
+            .When(x => x.PublishedAt.HasValue)
+            .WithMessage("PublishedAt cannot be in the future.");
     }
 }
