@@ -4,13 +4,15 @@
     <v-btn text to="/app" exact> Home </v-btn>
     <v-btn text to="/app/libraries" exact> My Libraries </v-btn>
     <v-btn text to="/app/loans" exact> Prestiti </v-btn>
-    <v-btn text v-if="auth.hasRole('admin')" exact>Administration Panel</v-btn>
+    <v-btn text v-if="auth.hasRole('admin')" to="/app/admin" exact>Amministrazione</v-btn>
     <v-spacer />
     <v-menu min-width="200px" :close-on-content-click="false">
       <template v-slot:activator="{ props }">
-        <v-btn icon v-bind="props">
+        <v-btn icon v-bind="props" aria-label="Menu utente">
           <v-avatar color="brown" size="large">
-            <span class="text-headline-small">{{ user.initials }}</span>
+            <!-- Miniatura se caricata, iniziali come ripiego -->
+            <v-img v-if="user.avatar" :src="user.avatar" :alt="`Profilo di ${user.fullName}`" />
+            <span v-else class="text-headline-small">{{ user.initials }}</span>
           </v-avatar>
         </v-btn>
       </template>
@@ -18,14 +20,15 @@
         <v-card-text>
           <div class="mx-auto text-center">
             <v-avatar color="brown">
-              <span class="text-headline-small">{{ user.initials }}</span>
+              <v-img v-if="user.avatar" :src="user.avatar" alt="" />
+              <span v-else class="text-headline-small">{{ user.initials }}</span>
             </v-avatar>
             <h3 class="my-0">{{ user.fullName }}</h3>
             <p class="text-body-small mt-1">
               {{ user.email }}
             </p>
             <v-divider class="my-3"></v-divider>
-            <v-btn variant="text" rounded> Edit Account </v-btn>
+            <v-btn variant="text" rounded to="/app/profile"> Profilo </v-btn>
             <v-divider class="my-3"></v-divider>
             <v-btn variant="text" rounded @click="auth.logout()"> Disconnect </v-btn>
           </div>
@@ -55,6 +58,8 @@ const user = computed(() => {
     fullName,
     email: info.email ?? '',
     initials,
+    // Nella barra basta la miniatura; l'originale serve solo nella pagina profilo.
+    avatar: info.avatarThumbnailUrl ?? info.avatarUrl,
   }
 })
 </script>

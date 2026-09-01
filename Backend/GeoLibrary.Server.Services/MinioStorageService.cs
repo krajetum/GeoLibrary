@@ -22,12 +22,19 @@ public class MinioStorageService(IMinioClient client, ILogger<MinioStorageServic
 
     public async Task<string> UploadImageAsync(Stream content, string fileName, string contentType)
     {
+        // Tracce a livello Debug: un errore nel codice nativo di Skia non lascia
+        // alcuna eccezione gestita, quindi in caso di problemi l'ultima riga
+        // registrata è l'unico indizio su quale stadio si sia fermato.
+        logger.LogDebug("Upload immagine {FileName} ({ContentType})", fileName, contentType);
+
         var key = await Upload(content, fileName, contentType);
+        logger.LogDebug("Originale salvato con chiave {Key}", key);
 
         // L'originale è già stato letto fino in fondo, si riparte dall'inizio per la miniatura.
         content.Position = 0;
 
         using var original = SKBitmap.Decode(content);
+        logger.LogDebug("Decodifica completata per {Key}", key);
 
         // Formato non riconosciuto: si tiene l'originale e si rinuncia alla miniatura.
         if (original is null)
@@ -40,17 +47,45 @@ public class MinioStorageService(IMinioClient client, ILogger<MinioStorageServic
             (float)ThumbnailSize / original.Width,
             (float)ThumbnailSize / original.Height));
 
-        var size = new SKImageInfo((int)(original.Width * scale), (int)(original.Height * scale));
+        // Almeno un pixel per lato: con un'immagine molto allungata l'arrotondamento
+        // porterebbe un lato a zero, e Skia ridimensiona verso una superficie vuota.
+        var width = Math.Max(1, (int)(original.Width * scale));
+        var height = Math.Max(1, (int)(original.Height * scale));
+        var size = new SKImageInfo(width, height);
+
         // Mitchell: ricampionamento cubico, senza scalettature nelle riduzioni forti.
+        logger.LogDebug("Ridimensionamento di {Key} a {Width}x{Height}", key, width, height);
         using var resized = original.Resize(size, new SKSamplingOptions(SKCubicResampler.Mitchell));
+
+        // Resize restituisce null se non riesce ad allocare o a convertire il formato:
+        // passarlo a SKImage.FromBitmap farebbe cadere il processo nel codice nativo.
+        if (resized is null)
+        {
+            logger.LogWarning("Ridimensionamento non riuscito per {Key}: miniatura non generata", key);
+            return key;
+        }
 
         // Si tiene il formato di partenza: convertire un PNG con trasparenza in JPEG darebbe fondo nero.
         var format = contentType == "image/png" ? SKEncodedImageFormat.Png : SKEncodedImageFormat.Jpeg;
         using var image = SKImage.FromBitmap(resized);
+        if (image is null)
+        {
+            logger.LogWarning("Impossibile creare l'immagine per {Key}: miniatura non generata", key);
+            return key;
+        }
+
         using var encoded = image.Encode(format, 80);
+        if (encoded is null)
+        {
+            logger.LogWarning("Codifica della miniatura non riuscita per {Key}", key);
+            return key;
+        }
+
         using var thumbnail = encoded.AsStream();
+        logger.LogDebug("Miniatura codificata per {Key}, salvataggio in corso", key);
 
         await Put(thumbnail, ThumbnailKey(key), contentType);
+        logger.LogDebug("Miniatura salvata per {Key}", key);
 
         return key;
     }
@@ -77,6 +112,7 @@ public class MinioStorageService(IMinioClient client, ILogger<MinioStorageServic
     private async Task Put(Stream content, string key, string contentType)
     {
         await EnsureBucketExists();
+        logger.LogDebug("PutObject {Key} ({Size} byte)", key, content.Length);
 
         await client.PutObjectAsync(new PutObjectArgs()
             .WithBucket(BucketName)
@@ -93,6 +129,13 @@ public class MinioStorageService(IMinioClient client, ILogger<MinioStorageServic
         {
             await client.MakeBucketAsync(new MakeBucketArgs().WithBucket(BucketName));
         }
+    }
+
+    public async Task<bool> DeleteImageAsync(string key)
+    {
+        var original = await DeleteAsync(key);
+        var thumbnail = await DeleteAsync(ThumbnailKey(key));
+        return original && thumbnail;
     }
 
     public Task<bool> DeleteAsync(string key)

@@ -169,24 +169,29 @@
         <v-card variant="flat" class="rounded-lg mb-6">
           <v-card-title class="text-h6">Statistiche</v-card-title>
           <v-card-text>
-            <!-- TODO: le visualizzazioni non hanno ancora un endpoint che le conti,
-                 quindi qui non compaiono. -->
             <v-row>
-              <v-col cols="6" md="4">
+              <v-col cols="6" md="3">
+                <div class="text-h4">{{ book.viewsCount ?? 0 }}</div>
+                <div class="text-caption text-medium-emphasis">Visualizzazioni totali</div>
+              </v-col>
+              <v-col cols="6" md="3">
                 <div class="text-h4">{{ pendingCount }}</div>
                 <div class="text-caption text-medium-emphasis">Richieste in attesa</div>
               </v-col>
-              <v-col cols="6" md="4">
+              <v-col cols="6" md="3">
                 <div class="text-h4">{{ activeLoansCount }}</div>
                 <div class="text-caption text-medium-emphasis">Prestiti attivi</div>
               </v-col>
-              <v-col cols="6" md="4">
+              <v-col cols="6" md="3">
                 <div class="text-h4">{{ book.totalCopies }}</div>
                 <div class="text-caption text-medium-emphasis">Copie totali</div>
               </v-col>
             </v-row>
           </v-card-text>
         </v-card>
+
+        <!-- Serie storica delle visualizzazioni del singolo libro -->
+        <views-stats-card :library-id="libraryId" :book-id="bookId" class="mb-6" />
 
         <v-card variant="flat" class="rounded-lg">
           <v-card-title class="text-h6">Richieste di prestito</v-card-title>
@@ -312,6 +317,7 @@ import { useApi } from '@/composables/useApi'
 import { useLoanStatus } from '@/composables/useLoanStatus'
 import { useAuthStore } from '@/stores/auth'
 import { useRoute, useRouter } from 'vue-router'
+import ViewsStatsCard from '@/components/views-stats-card.vue'
 
 const route = useRoute()
 const router = useRouter()

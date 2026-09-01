@@ -1,4 +1,5 @@
 import keycloak from '@/core/auth/keycloak'
+import { SIGNATURE_KEY, useConsent } from '@/composables/useConsent'
 
 const BASE_URL = import.meta.env.VITE_API_URL
 
@@ -9,10 +10,16 @@ async function apiFetch(path: string, options: RequestInit = {}) {
     await keycloak.updateToken(30)
   }
 
-  var signature = localStorage.getItem('x-signature')
-  if (!signature) {
-    signature = crypto.randomUUID()
-    localStorage.setItem('x-signature', signature)
+  // Senza consenso esplicito non generiamo né inviamo l'identificatore pseudonimo:
+  // il backend gestisce già l'header assente semplicemente non tracciando la visita.
+  const { isTrackingAllowed } = useConsent()
+  let signature: string | null = null
+  if (isTrackingAllowed.value) {
+    signature = localStorage.getItem(SIGNATURE_KEY)
+    if (!signature) {
+      signature = crypto.randomUUID()
+      localStorage.setItem(SIGNATURE_KEY, signature)
+    }
   }
 
   // Con FormData il boundary multipart va generato dal browser: niente Content-Type esplicito.
@@ -23,8 +30,8 @@ async function apiFetch(path: string, options: RequestInit = {}) {
     headers: {
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(keycloak.authenticated ? { Authorization: `Bearer ${keycloak.token}` } : {}),
+      ...(signature ? { 'X-User-Signature': signature } : {}),
       ...options.headers,
-      'X-User-Signature': signature,
     },
   })
 }

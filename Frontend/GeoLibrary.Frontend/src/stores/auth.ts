@@ -14,6 +14,8 @@ export interface UserInfo {
   email: string | null
   displayName: string | null
   avatarUrl: string | null
+  /** Miniatura da 400px generata al caricamento: usata dove l'avatar è piccolo. */
+  avatarThumbnailUrl: string | null
 }
 
 const emptyUserInfo = (): UserInfo => ({
@@ -22,6 +24,7 @@ const emptyUserInfo = (): UserInfo => ({
   email: null,
   displayName: null,
   avatarUrl: null,
+  avatarThumbnailUrl: null,
 })
 
 export const useAuthStore = defineStore('auth', () => {
@@ -38,6 +41,7 @@ export const useAuthStore = defineStore('auth', () => {
       email: claims?.email ?? null,
       displayName: claims?.name ?? null,
       avatarUrl: null,
+      avatarThumbnailUrl: null,
     }
   }
 

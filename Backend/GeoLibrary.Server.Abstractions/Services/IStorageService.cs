@@ -1,4 +1,4 @@
-namespace GeoLibrary.Server.Abstractions.Services;
+﻿namespace GeoLibrary.Server.Abstractions.Services;
 
 public interface IStorageService
 {
@@ -21,6 +21,13 @@ public interface IStorageService
     /// URL temporaneo della miniatura generata da UploadImage.
     /// </summary>
     Task<string> GetThumbnailUrl(string key);
+
+    /// <summary>
+    /// Cancella un'immagine caricata con UploadImageAsync, miniatura compresa.
+    /// Il prefisso della miniatura e' un dettaglio dell'implementazione, quindi
+    /// la cancellazione della coppia sta qui e non nei chiamanti.
+    /// </summary>
+    Task<bool> DeleteImageAsync(string key);
 
     Task<bool> DeleteAsync(string key);
     Task<bool> DeleteManyAsync(IEnumerable<string> keys);

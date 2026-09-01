@@ -17,7 +17,9 @@ public class BookProfile : Profile
             .ForMember(d => d.CoverImageUrl, opt => opt.Ignore())
             .ForMember(d => d.CoverThumbnailUrl, opt => opt.Ignore())
             // IsAdmin lo valorizza il controller, come per LibraryDto
-            .ForMember(d => d.IsAdmin, opt => opt.Ignore());
+            .ForMember(d => d.IsAdmin, opt => opt.Ignore())
+            // Stesso criterio di LibraryDto: di default il dato di visite non viene esposto.
+            .ForMember(d => d.ViewsCount, opt => opt.Ignore());
 
         CreateMap<AddBookDto, BookEntity>()
             // Stesso nome ma tipi diversi (List<Guid> vs ICollection<CategoryEntity>):

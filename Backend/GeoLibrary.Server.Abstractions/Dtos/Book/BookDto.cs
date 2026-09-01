@@ -17,6 +17,12 @@ public class BookDto
 
     public bool IsHidden { get; set; }
 
+    /// <summary>
+    /// Numero di visualizzazioni. Come in LibraryDto è valorizzato solo per il
+    /// proprietario della libreria; null vuol dire "non visibile a chi chiede".
+    /// </summary>
+    public long? ViewsCount { get; set; }
+
     public string? CoverImageUrl { get; set; }
     public string? CoverThumbnailUrl { get; set; }
 

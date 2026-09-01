@@ -1,4 +1,4 @@
-using AutoMapper;
+﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using GeoLibrary.Server.Abstractions.Dtos;
 using GeoLibrary.Server.Abstractions.Dtos.Book;
@@ -239,6 +239,8 @@ public class LibraryController : ControllerBase
         var dto = await ToDto(result.Entity, isOwner || withApprovedLoan.Contains(result.Entity.Id));
         dto.BookCount = result.BookCount;
         dto.IsAdmin = isOwner;
+        // Il numero di visite è un dato di analisi del proprietario: non va esposto ai visitatori.
+        dto.ViewsCount = isOwner ? result.Entity.ViewsCount : null;
 
         if (!isOwner && _contextAccessor.TryGetUserSignature(out string userSignature))
         {
@@ -269,20 +271,10 @@ public class LibraryController : ControllerBase
         {
             return Forbid();
         }
-        var cleanedFrom = from.Date;
-        var cleanedTo = to.Date;
-
-        if (cleanedFrom > cleanedTo)
+        if (!StatsExtensions.TryNormalizeRange(from, to, out var cleanedFrom, out var cleanedTo, out var error))
         {
-            return BadRequest("La data di inizio non può essere successiva a quella di fine.");
+            return BadRequest(error);
         }
-
-        // range troppo grande 
-        if ((cleanedTo - cleanedFrom).TotalDays > 365)
-        {
-            return BadRequest("Il range di date non può superare un anno.");
-        }
-
 
         var stats = await _db.LibraryDailyViews
             .AsNoTracking()
@@ -295,7 +287,7 @@ public class LibraryController : ControllerBase
             })
             .ToListAsync();
 
-        var completeStats = FillStats(cleanedFrom, cleanedTo, stats);
+        var completeStats = StatsExtensions.FillStats(cleanedFrom, cleanedTo, stats);
 
         return Ok(completeStats);
 
@@ -402,6 +394,8 @@ public class LibraryController : ControllerBase
 
         var dto = _mapper.Map<BookDto>(book);
         dto.IsAdmin = isOwner;
+        // Come per la libreria: le visite le vede solo chi possiede il patrimonio.
+        dto.ViewsCount = isOwner ? book.ViewsCount : null;
 
         if (!string.IsNullOrEmpty(book.CoverImageKey))
         {
@@ -443,19 +437,9 @@ public class LibraryController : ControllerBase
             return Forbid();
         }
 
-        var cleanedFrom = from.Date;
-        var cleanedTo = to.Date;
-
-
-        if (cleanedFrom > cleanedTo)
+        if (!StatsExtensions.TryNormalizeRange(from, to, out var cleanedFrom, out var cleanedTo, out var error))
         {
-            return BadRequest("La data di inizio non può essere successiva a quella di fine.");
-        }
-
-        // range troppo grande 
-        if ((cleanedTo - cleanedFrom).TotalDays > 365)
-        {
-            return BadRequest("Il range di date non può superare un anno.");
+            return BadRequest(error);
         }
 
         var stats = await _db.BookDailyViews
@@ -470,25 +454,9 @@ public class LibraryController : ControllerBase
             .ToListAsync();
 
         // Se ci sono buchi di date dove non ci sono state delle visite, li riempiamo con ViewsCount = 0.
-        var completeStats = FillStats(cleanedFrom, cleanedTo, stats);
+        var completeStats = StatsExtensions.FillStats(cleanedFrom, cleanedTo, stats);
 
         return Ok(completeStats);
-    }
-
-    private static List<DateStats> FillStats(DateTime cleanedFrom, DateTime cleanedTo, List<DateStats> stats)
-    {
-        var allDatesInRange = Enumerable.Range(0, (cleanedTo - cleanedFrom).Days + 1)
-                              .Select(offset => cleanedFrom.AddDays(offset))
-                              .ToList();
-
-        var statsDict = stats.ToDictionary(s => s.Date, s => s.ViewsCount);
-
-        var completeStats = allDatesInRange.Select(date => new DateStats
-        {
-            Date = DateOnly.FromDateTime(date),
-            ViewsCount = statsDict.TryGetValue(DateOnly.FromDateTime(date), out var count) ? count : 0
-        }).ToList();
-        return completeStats;
     }
 
     [HttpPost("{libraryId}/books/import")]

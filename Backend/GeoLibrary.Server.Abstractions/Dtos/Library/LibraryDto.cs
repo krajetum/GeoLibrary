@@ -22,6 +22,13 @@ public class LibraryDto
     public required double Latitude { get; set; } = 0.0;
     public required double Longitude { get; set; } = 0.0;
     public required long BookCount { get; set; } = 0;
+
+    /// <summary>
+    /// Numero di visualizzazioni. Valorizzato solo per il proprietario:
+    /// null significa "non hai diritto a questo dato", non "zero visite".
+    /// </summary>
+    public long? ViewsCount { get; set; }
+
     public bool IsHidden { get; set; }
 
     /// <summary>

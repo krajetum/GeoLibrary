@@ -20,7 +20,13 @@
               <v-chip size="small" variant="tonal" color="primary" prepend-icon="mdi-book-multiple">
                 {{ library.bookCount ?? 0 }} libri
               </v-chip>
-              <v-chip size="small" variant="tonal" prepend-icon="mdi-eye-outline">
+              <!-- Il conteggio visite arriva dal server solo se sei il proprietario -->
+              <v-chip
+                v-if="library.isAdmin"
+                size="small"
+                variant="tonal"
+                prepend-icon="mdi-eye-outline"
+              >
                 {{ library.viewsCount ?? 0 }} visite
               </v-chip>
               <v-chip
@@ -92,6 +98,13 @@
       </v-col>
     </v-row>
 
+    <!-- Andamento delle visualizzazioni: riservato al proprietario della libreria -->
+    <v-row v-if="library.isAdmin">
+      <v-col>
+        <views-stats-card :library-id="id" />
+      </v-col>
+    </v-row>
+
     <v-row>
       <v-col>
         <books-table :library-id="id" />
@@ -123,6 +136,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import BooksTable from '@/components/books-table.vue'
+import ViewsStatsCard from '@/components/views-stats-card.vue'
 
 const api = useApi()
 const route = useRoute()

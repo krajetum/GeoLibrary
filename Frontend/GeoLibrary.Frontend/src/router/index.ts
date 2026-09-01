@@ -15,6 +15,12 @@ const router = createRouter({
           component: () => import('@/pages/Home.vue'),
         },
         {
+          // Informativa privacy: pubblica e raggiungibile anche dal banner di consenso.
+          path: 'privacy',
+          meta: { title: 'Privacy' },
+          component: () => import('@/pages/privacy.vue'),
+        },
+        {
           path: 'libraries/:id',
           children: [
             {
@@ -37,6 +43,17 @@ const router = createRouter({
         {
           path: '',
           component: () => import('@/pages/app/Dashboard.vue'),
+        },
+        {
+          // Riservata al ruolo di realm "admin": vedi il controllo in beforeEach.
+          path: 'admin',
+          meta: { title: 'Amministrazione', requiresRole: 'admin' },
+          component: () => import('@/pages/app/admin/dashboard.vue'),
+        },
+        {
+          path: 'profile',
+          meta: { title: 'Profilo' },
+          component: () => import('@/pages/app/profile.vue'),
         },
         {
           path: 'loans',
@@ -111,6 +128,16 @@ router.beforeEach((to) => {
   if (requiresAuth && !auth.isAuthenticated) {
     auth.login(to.fullPath)
     return false
+  }
+
+  // Rotte riservate a un ruolo: qui si nasconde solo l'interfaccia, l'autorizzazione
+  // vera resta sulle policy degli endpoint. Chi è autenticato ma non ha il ruolo
+  // viene riportato alla home dell'area riservata, non al login.
+  const requiredRole = to.matched.find((record) => record.meta.requiresRole)?.meta.requiresRole as
+    | string
+    | undefined
+  if (requiredRole && !auth.hasRole(requiredRole)) {
+    return '/app'
   }
 })
 

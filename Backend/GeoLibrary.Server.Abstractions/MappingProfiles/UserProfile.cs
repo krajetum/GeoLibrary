@@ -12,7 +12,11 @@ public class UserProfile : Profile
 
     public UserProfile()
     {
-        CreateMap<UserEntity, ProfileDto>();
+        // Gli URL dell'avatar non stanno in tabella (c'e' solo la chiave):
+        // li costruisce il controller firmandoli a ogni richiesta.
+        CreateMap<UserEntity, ProfileDto>()
+            .ForMember(d => d.AvatarUrl, opt => opt.Ignore())
+            .ForMember(d => d.AvatarThumbnailUrl, opt => opt.Ignore());
     }
 
 }

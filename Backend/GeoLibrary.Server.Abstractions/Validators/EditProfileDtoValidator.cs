@@ -7,7 +7,7 @@ using System.Text;
 
 namespace GeoLibrary.Server.Abstractions.Validators;
 
-internal class EditProfileDtoValidator : AbstractValidator<EditProfileDto>
+public class EditProfileDtoValidator : AbstractValidator<EditProfileDto>
 {
 
     public EditProfileDtoValidator()
