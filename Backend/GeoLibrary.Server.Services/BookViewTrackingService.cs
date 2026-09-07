@@ -70,6 +70,10 @@ public class BookViewTrackingService(IDistributedCache redis, GeoLibraryDbContex
             Date = utcMidnight,
             ViewsCount = 1,
         });
+
+        var book = await db.Books.FirstOrDefaultAsync(b => b.Id == bookId) ?? throw new InvalidOperationException($"Book with ID {bookId} not found.");
+        book.ViewsCount++;
+
         await db.SaveChangesAsync();
         return true;
     }
