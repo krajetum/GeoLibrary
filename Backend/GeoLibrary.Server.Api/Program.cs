@@ -41,6 +41,13 @@ await using (var scope = app.Services.CreateAsyncScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<GeoLibraryDbContext>();
     await db.Database.MigrateAsync();
+
+    if (app.Environment.IsDevelopment() && !await db.Users.AnyAsync())
+    {
+        var dbSeeder = new GeolibrarySeedingService(db);
+        await dbSeeder.SeedAsync();
+    }
+
 }
 
 app.MapScalarApiReference();
