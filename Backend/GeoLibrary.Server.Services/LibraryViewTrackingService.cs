@@ -55,6 +55,7 @@ public class LibraryViewTrackingService(IDistributedCache redis, GeoLibraryDbCon
         if (await db.LibraryDailyViews.FindAsync(libraryId, utcMidnight) is LibraryDailyViewEntity existing)
         {
             existing.ViewsCount++;
+            await AddLibraryView(libraryId);
             await db.SaveChangesAsync();
             return true;
         }
@@ -66,9 +67,21 @@ public class LibraryViewTrackingService(IDistributedCache redis, GeoLibraryDbCon
             Date = utcMidnight,
             ViewsCount = 1,
         });
+        await AddLibraryView(libraryId);
         await db.SaveChangesAsync();
         return true;
     }
+
+    public async Task AddLibraryView(Guid libraryId)
+    {
+        var library = await db.Libraries.FindAsync(libraryId);
+        if (library is not null)
+        {
+            library.ViewsCount++;
+            await db.SaveChangesAsync();
+        }
+    }
+
 
     /// <summary>
     /// Restituisce la data di scadenza della cache per le visualizzazioni giornaliere. 

@@ -1,0 +1,3 @@
+INSERT INTO public."Libraries" ("Id","Name","Address","City","Country","CountryCode","PostalCode","Location","UserId","ViewsCount","ImageKey","Description","IsHidden") VALUES
+	 ('720a210b-f906-4f10-86d5-8b81f68c2ee6'::uuid,'Test Library 2','Piazza Venezia, 1, 00186 Roma RM, Italy','Roma','Italia','IT','00186','SRID=4326;POINT (12.4964 41.9028)'::public.geometry,'34f8f303-dc10-4fda-bf20-4831a146b97d'::uuid,0,NULL,'',false),
+	 ('d5d9f0ba-20be-49c2-bd7a-6ef35c0d29f9'::uuid,'Test Library 1','Piazza del Colosseo, 1, 00184 Roma RM, Italy','Roma','Italia','IT','00184','SRID=4326;POINT (12.4924 41.8902)'::public.geometry,'3999c408-6f0b-492b-8a12-39bb2de80232'::uuid,0,NULL,'',false);

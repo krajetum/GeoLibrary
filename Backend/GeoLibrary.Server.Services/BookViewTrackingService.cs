@@ -58,6 +58,7 @@ public class BookViewTrackingService(IDistributedCache redis, GeoLibraryDbContex
         if (existing is not null)
         {
             existing.ViewsCount++;
+            await AddBookView(bookId);
             await db.SaveChangesAsync();
             return true;
         }
@@ -71,11 +72,19 @@ public class BookViewTrackingService(IDistributedCache redis, GeoLibraryDbContex
             ViewsCount = 1,
         });
 
-        var book = await db.Books.FirstOrDefaultAsync(b => b.Id == bookId) ?? throw new InvalidOperationException($"Book with ID {bookId} not found.");
-        book.ViewsCount++;
+        await AddBookView(bookId);
 
         await db.SaveChangesAsync();
+
+
+
         return true;
+    }
+
+    private async Task AddBookView(Guid bookId)
+    {
+        var book = await db.Books.FirstOrDefaultAsync(b => b.Id == bookId) ?? throw new InvalidOperationException($"Book with ID {bookId} not found.");
+        book.ViewsCount++;
     }
 
     /// <summary>
