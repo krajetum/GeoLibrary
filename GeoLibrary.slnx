@@ -12,5 +12,8 @@
       <Deploy />
     </Project>
   </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/GeoLibrary.Server.Tests/GeoLibrary.Server.Tests.csproj" />
+  </Folder>
   <Project Path="GeoLibrary.AppHost/GeoLibrary.AppHost.csproj" />
 </Solution>

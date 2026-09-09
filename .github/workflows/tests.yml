@@ -1,0 +1,22 @@
+name: Tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore Tests/GeoLibrary.Server.Tests/GeoLibrary.Server.Tests.csproj
+
+      - name: Test
+        run: dotnet test Tests/GeoLibrary.Server.Tests/GeoLibrary.Server.Tests.csproj --no-restore
