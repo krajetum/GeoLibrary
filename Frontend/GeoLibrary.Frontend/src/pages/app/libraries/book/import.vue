@@ -14,7 +14,6 @@
           automaticamente da un servizio esterno.
         </p>
 
-        <!-- TODO: valutare v-file-upload (dropzone) come in book/new.vue -->
         <v-file-upload
           v-model="file"
           label="Seleziona file (.csv, .txt)"

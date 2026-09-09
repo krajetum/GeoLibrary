@@ -16,11 +16,12 @@ var backend = useApi()
 const libraries = ref<any[]>([])
 
 onMounted(async () => {
-  var response = await backend.apiFetch('/library')
-  if (response.status !== 200) {
-    // TODO: Handle error
-  }
+    var response = await backend.apiFetch('/library')
 
-  libraries.value = await response.json()
+    if (response.status !== 200) {
+        libraries.value = []
+    } else {
+        libraries.value = await response.json()
+    }
 })
 </script>
